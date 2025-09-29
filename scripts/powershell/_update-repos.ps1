@@ -24,7 +24,7 @@ function Parse-Arguments
     $result = [ordered]@{
         RootPath = $Script:DefaultRootPath; NoPull = $false; SkipDirty = $false; StashDirty = $false
         UseRebase = $false; FetchAllRemotes = $false; VerboseBranches = $false
-        ShowVersion = $false; ShowHelp = $false; Invalid = @()
+        Invalid = @()
     }
 
     for ($i = 0; $i -lt $ArgList.Count; $i++) {
@@ -60,12 +60,6 @@ function Parse-Arguments
             'verbose-branches' { $result.VerboseBranches = $true; continue }
             'verbose' { $result.VerboseBranches = $true; continue }
             'v' { $result.VerboseBranches = $true; continue }
-            'showversion' { $result.ShowVersion = $true; continue }
-            'version' { $result.ShowVersion = $true; continue }
-            'ver' { $result.ShowVersion = $true; continue }
-            'showhelp' { $result.ShowHelp = $true; continue }
-            'help' { $result.ShowHelp = $true; continue }
-            'h' { $result.ShowHelp = $true; continue }
             default {
                 if ($raw.StartsWith('-')) { $result.Invalid += $raw; continue }
 
@@ -84,26 +78,6 @@ function Parse-Arguments
 
     return $result
 }
-
-$__parsed = Parse-Arguments -ArgList $args
-
-if ($__parsed.Invalid.Count -gt 0)
-{
-    Write-Host (Format-Text -Text 'Unrecognized option(s):' -Color 'Red')
-    $__parsed.Invalid | ForEach-Object { Write-Host (Format-Text -Text "  $_" -Color 'Red') }
-    Write-Host (Format-Text -Text 'See details inside the script to view supported parameters.' -Color 'Yellow')
-    exit 2
-}
-
-$RootPath        = $__parsed.RootPath
-$NoPull          = $__parsed.NoPull
-$SkipDirty       = $__parsed.SkipDirty
-$StashDirty      = $__parsed.StashDirty
-$UseRebase       = $__parsed.UseRebase
-$FetchAllRemotes = $__parsed.FetchAllRemotes
-$VerboseBranches = $__parsed.VerboseBranches
-$ShowVersion     = $__parsed.ShowVersion
-$ShowHelp        = $__parsed.ShowHelp
 
 # Symbols for summary output 
 # TODO: Change these to font glyphs
@@ -437,12 +411,12 @@ function Invoke-RepositoryProcessing
     }
 
     # Show completion status with icon on the same line
-    $statusIcon = if ($statusNote -eq 'up to date') { '✅' } 
+    $statusIcon = if ($statusNote -match '^(up to date|already up to date)$') { '✅' } 
                  elseif ($statusNote -match 'failed|error') { '🔴' }
                  elseif ($statusNote -match 'skipped|dirty') { '⛔' }
                  else { '•' }
     
-    $statusColor = if ($statusNote -eq 'up to date') { 'Green' } 
+    $statusColor = if ($statusNote -match '^(up to date|already up to date)$') { 'Green' } 
                   elseif ($statusNote -match 'failed|error') { 'Red' }
                   elseif ($statusNote -match 'skipped|dirty') { 'Yellow' }
                   else { 'White' }
@@ -479,11 +453,11 @@ function Write-Summary
     
     $sorted = $Results | Sort-Object Name
     $allUpToDate = -not ($sorted | Where-Object { 
-        $_.PSObject.Properties['Status'] -and $_.Status -and $_.Status -ne 'up to date' 
+        $_.PSObject.Properties['Status'] -and $_.Status -and $_.Status -notmatch '^(up to date|already up to date)$' 
     })
 
     $branchExpr = @{ Name = 'Branch'; Expression = { if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) { Format-Text -Text $_.Branch -Color 'Cyan' } else { $_.Branch } } }    
-    $dirtyExpr  = @{ Name = 'Dirty';  Expression = { if ($_.Dirty  -eq 'Yes') { Get-SuccessSymbol } else { Get-FailureSymbol } } }
+    $dirtyExpr  = @{ Name = 'Dirty';  Expression = { if ($_.Dirty -eq 'Yes') { Get-FailureSymbol } else { Get-SuccessSymbol } } }
     $pulledExpr = @{ Name = 'Pulled'; Expression = { if ($_.Pulled -eq 'Yes') { Get-SuccessSymbol } else { Get-FailureSymbol } } }
 
     if ($allUpToDate)
@@ -505,51 +479,8 @@ function Write-Summary
     Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $Elapsed.TotalSeconds, ($Results | Measure-Object).Count) -Color 'Green')
 }
 
-function Show-HelpShort
-{
-    param()
-
-    Get-Help -Detailed -ErrorAction SilentlyContinue | Out-Null
-    Write-Host (Format-Text -Text 'Use Get-Help .\_update-repos.ps1 -Detailed for full help.' -Color 'Cyan')
-}
-
-function Show-VersionInfo
-{
-    $scriptPath = $MyInvocation.MyCommand.Path
-    if (-not $scriptPath -and (Get-Variable -Name PSCommandPath -ErrorAction SilentlyContinue)) { $scriptPath = $PSCommandPath }
-    if (-not $scriptPath) { $scriptPath = (Get-Location).ProviderPath }
-
-    $gitHead = $null
-    $gitVer  = $null
-    if (Get-Command git -ErrorAction SilentlyContinue)
-    {
-        try { $gitHead = git rev-parse --short HEAD 2>$null } catch {}
-        try { $gitVer  = git --version 2>$null } catch {}
-    }
-
-    $fileInfo = $null
-    try { $fileInfo = Get-Item $scriptPath -ErrorAction Stop } catch {}
-
-    Write-Host (Format-Text -Text ("Script: {0}" -f (Split-Path $scriptPath -Leaf 2>$null)) -Color 'Cyan')
-    Write-Host (Format-Text -Text ("Path:   {0}" -f $scriptPath) -Color 'White')
-    if ($fileInfo) { Write-Host (Format-Text -Text ("Modified (Local): {0}" -f $fileInfo.LastWriteTime) -Color 'White') }
-    if ($gitVer)  { Write-Host (Format-Text -Text "Git:    $gitVer" -Color 'White') }
-    if ($gitHead) { Write-Host (Format-Text -Text "HEAD:   $gitHead" -Color 'BrightGreen') }
-}
-
 function Main
 {
-    if ($ShowHelp)
-    {
-        Write-Host @"
-Usage: .\_update-repos.ps1 [options]
-See details inside the script to view supported parameters.
-
-"@
-        return
-    }
-
-    if ($ShowVersion) { Show-VersionInfo; return }
     if (-not (Test-Path -Path $RootPath -PathType Container)) 
     { 
         Write-Error "RootPath '$RootPath' does not exist or is not a directory."; 
@@ -579,8 +510,28 @@ See details inside the script to view supported parameters.
     if ($VerboseBranches) {
         Write-Summary -Results $results -Elapsed $sw.Elapsed
     } else {
+        Write-Host ''
         Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $sw.Elapsed.TotalSeconds, ($results | Measure-Object).Count) -Color 'Green')
+        Write-Host ''    
     }
 }
+
+$__parsed = Parse-Arguments -ArgList $args
+
+if ($__parsed.Invalid.Count -gt 0)
+{
+    Write-Host (Format-Text -Text 'Unrecognized option(s):' -Color 'Red')
+    $__parsed.Invalid | ForEach-Object { Write-Host (Format-Text -Text "  $_" -Color 'Red') }
+    Write-Host (Format-Text -Text 'See details inside the script to view supported parameters.' -Color 'Yellow')
+    exit 2
+}
+
+$RootPath        = $__parsed.RootPath
+$NoPull          = $__parsed.NoPull
+$SkipDirty       = $__parsed.SkipDirty
+$StashDirty      = $__parsed.StashDirty
+$UseRebase       = $__parsed.UseRebase
+$FetchAllRemotes = $__parsed.FetchAllRemotes
+$VerboseBranches = $__parsed.VerboseBranches
 
 Main
