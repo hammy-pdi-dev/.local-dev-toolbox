@@ -84,6 +84,37 @@ function Parse-Arguments
 $Script:CheckMark = '+'
 $Script:CrossMark = 'x'
 
+# Status message constants
+$Script:Status = @{
+    Fetched = 'Fetched'
+    UpToDate = 'Up to date'
+    AlreadyUpToDate = 'Already up to date'
+    FetchedOnly = 'Fetched only'
+    Rebased = 'Rebased'
+    FastForwarded = 'Fast-forwarded'
+    PullFailed = 'Pull failed'
+    DetachedHead = 'Detached HEAD (fetched)'
+    NoRemoteBranch = 'No remote branch'
+    PullError = 'Pull error'
+    SkippedNoOrigin = 'Skipped (no origin)'
+    DirtySkipped = 'Dirty / skipped'
+    StashRestored = ' (Stash restored)'
+    StashConflicts = ' (Stash conflicts)'
+}
+
+$Script:PulledStatus = @{
+    Yes = 'Yes'
+    No = 'No'
+    NoOrigin = 'No origin'
+    Skipped = 'Skipped'
+}
+
+# Pre-compiled regex patterns for performance
+$Script:RegexPatterns = @{
+    UpToDatePattern = "^($([regex]::Escape($Script:Status.UpToDate))|$([regex]::Escape($Script:Status.AlreadyUpToDate)))$"
+    FailedErrorPattern = 'failed|error'
+    SkippedDirtyPattern = 'skipped|dirty'
+}
 
 function Format-Text
 {
@@ -110,12 +141,12 @@ function Format-Text
 
 function Get-SuccessSymbol
 {
-    return Format-Text -Text $Script:CheckMark -Color 'Green'
+    return Format-Text -Text $Script:CheckMark -Color 'Red'
 }
 
 function Get-FailureSymbol
 {
-    return Format-Text -Text $Script:CrossMark -Color 'Red'
+    return Format-Text -Text $Script:CrossMark -Color 'Green'
 }
 
 # -------------------------------------------------------------------------
@@ -185,13 +216,12 @@ function Invoke-GitFetch
     try {
         $fetchArgs = if ($All) { @('fetch', '--all', '--prune') } else { @('fetch', 'origin', '--prune') }
         
-        # Capture both stdout and stderr
-        $result = & git -C $Path @fetchArgs 2>&1
+        # Use faster null redirection and direct exit code check
+        & git -C $Path @fetchArgs >$null 2>$null
+        $success = $LASTEXITCODE -eq 0
         
-        # Check for fetch errors
-        $errorLines = $result | Where-Object { $_ -match 'error:|fatal:' }
-        if ($errorLines) {
-            Write-Warning "Fetch issues for '$(Split-Path $Path -Leaf)': $($errorLines -join '; ')"
+        if (-not $success) {
+            Write-Warning "Fetch failed for '$(Split-Path $Path -Leaf)' (exit code: $LASTEXITCODE)"
             return $false
         }
         
@@ -258,19 +288,19 @@ function Invoke-GitPull
     
     try {
         if ($Branch -eq '(detached)') { 
-            return $false, 'Detached HEAD (fetched)' 
+            return $false, $Script:Status.DetachedHead 
         }
         
         # Verify remote branch exists
         $remoteExists = git -C $Path rev-parse --verify "origin/$Branch" 2>$null
         if (-not $remoteExists -or $LASTEXITCODE -ne 0) { 
-            return $false, "No remote branch origin/$Branch" 
+            return $false, "$($Script:Status.NoRemoteBranch) origin/$Branch" 
         }
         
         # Check if pull is needed
         $ahead, $behind = Get-AheadBehind -Path $Path -Branch $Branch
         if ($behind -eq 0) {
-            return $true, "Already up to date"
+            return $true, $Script:Status.AlreadyUpToDate
         }
         
         # Prepare pull arguments
@@ -294,19 +324,19 @@ function Invoke-GitPull
         }
         
         if ($success) {
-            $statusText = if ($Rebase) { 'Rebased' } else { 'Fast-forwarded' }
+            $statusText = if ($Rebase) { $Script:Status.Rebased } else { $Script:Status.FastForwarded }
         } else {
             $statusText = if ($errorMessages) { 
-                "Pull failed: $($errorMessages[0])" 
+                "$($Script:Status.PullFailed): $($errorMessages[0])" 
             } else { 
-                'Pull failed' 
+                $Script:Status.PullFailed 
             }
         }
         
         return $success, $statusText
     }
     catch {
-        return $false, "Pull error: $($_.Exception.Message)"
+        return $false, "$($Script:Status.PullError): $($_.Exception.Message)"
     }
 }
 
@@ -337,44 +367,45 @@ function Invoke-RepositoryProcessing
 {
     param (
         [string]$Path, [switch]$SkipDirty, [switch]$StashDirty, [switch]$NoPull,
-        [switch]$UseRebase, [switch]$FetchAllRemotes, [switch]$VerboseBranches,
-        [int]$RepoIndex = 1, [int]$TotalRepos = 1
+        [switch]$UseRebase, [switch]$FetchAllRemotes
     )
 
     $name = Split-Path $Path -Leaf
-    $paddedIndex = $RepoIndex.ToString().PadLeft(2, '0')
-    $paddedTotal = $TotalRepos.ToString().PadLeft(2, '0')
-    $progressText = "[$paddedIndex/$paddedTotal] $name"
-
-    # Write progress without newline so we can add status icon on same line
-    Write-Host (Format-Text -Text $progressText -Color 'Cyan') -NoNewline
     
     $remoteExists = (git -C $Path remote 2>$null) -contains 'origin'
     if (-not $remoteExists)
     {
-        Write-Host (Format-Text -Text " ⚠ No origin" -Color 'Yellow')
-        return [PSCustomObject]@{ Name=$name; Branch=''; Ahead=''; Behind=''; Dirty=''; Pulled='No origin'; Status='Skipped (no origin)' }
+        return [PSCustomObject]@{ 
+            Name=$name; Branch=''; Ahead=0; Behind=0; Dirty='No'; 
+            Pulled=$Script:PulledStatus.NoOrigin; Status=$Script:Status.SkippedNoOrigin;
+            HasRemote=$false; StashMessages=@(); PullMessages=@()
+        }
     }
 
     $status = Get-RepoStatus -Path $Path
     if ($status.Dirty -and $SkipDirty)
     {
-        Write-Host (Format-Text -Text ' ⛔ Dirty / skipped' -Color 'Yellow')
-        return [PSCustomObject]@{ Name=$name; Branch=$status.Branch; Ahead=''; Behind=''; Dirty='Yes'; Pulled='Skipped'; Status='Dirty / skipped' }
+        return [PSCustomObject]@{ 
+            Name=$name; Branch=$status.Branch; Ahead=0; Behind=0; Dirty='Yes'; 
+            Pulled=$Script:PulledStatus.Skipped; Status=$Script:Status.DirtySkipped;
+            HasRemote=$true; StashMessages=@(); PullMessages=@()
+        }
     }
 
     $stashRef = $null
+    $stashMessages = @()
     if ($status.Dirty -and $StashDirty)
     {
         $stashRef = Push-StashIfNeeded -Path $Path
-        if ($stashRef) { Write-Host (Format-Text -Text "Stashed changes as $stashRef" -Color 'Cyan') }
+        if ($stashRef) { $stashMessages += "Stashed changes as $stashRef" }
     }
 
-    Invoke-GitFetch -Path $Path -All:$FetchAllRemotes
+    $null = Invoke-GitFetch -Path $Path -All:$FetchAllRemotes
     $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch
-    $pulled = 'No'
-    $statusNote = 'Fetched'
+    $pulled = $Script:PulledStatus.No
+    $statusNote = $Script:Status.Fetched
     $needPull = $behind -gt 0
+    $pullMessages = @()
 
     if ($needPull -and -not $NoPull)
     {
@@ -382,55 +413,34 @@ function Invoke-RepositoryProcessing
         $statusNote = $note
         if ($ok) 
         { 
-            $pulled='Yes'; $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch 
+            $pulled = $Script:PulledStatus.Yes
+            $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch 
         }
 
-        if (-not $ok -and $note -eq 'Pull failed') 
+        if (-not $ok -and $note -eq $Script:Status.PullFailed) 
         { 
-            Write-Host (Format-Text -Text 'Pull failed (merge/rebase needed). Manual intervention required.' -Color 'Red') 
+            $pullMessages += 'Pull failed (merge/rebase needed). Manual intervention required.'
         }
     }
     elseif (-not $NoPull -and -not $needPull) 
     { 
-        $statusNote = 'Up to date' 
+        $statusNote = $Script:Status.UpToDate 
     }
     elseif ($NoPull) 
     { 
-        $statusNote = 'Fetched only' 
+        $statusNote = $Script:Status.FetchedOnly 
     }
 
     if ($stashRef)
     {
         $ok = Pop-StashIfPresent -Path $Path
-        if ($ok) { $statusNote += ' (Stash restored)' } else { $statusNote += ' (Stash conflicts)' }
-        $status.Dirty = (Get-RepoStatus -Path $Path).Dirty
-    }
-    else 
-    {
-        $status.Dirty = (Get-RepoStatus -Path $Path).Dirty
+        if ($ok) { $statusNote += $Script:Status.StashRestored } else { $statusNote += $Script:Status.StashConflicts }
+        # Quick dirty check without full status call
+        $quickStatus = git -C $Path status --porcelain 2>$null
+        $status.Dirty = -not [string]::IsNullOrWhiteSpace($quickStatus)
     }
 
-    # Show completion status with icon on the same line
-    $statusIcon = if ($statusNote -match '^(up to date|already up to date)$') { '✅' } 
-                 elseif ($statusNote -match 'failed|error') { '🔴' }
-                 elseif ($statusNote -match 'skipped|dirty') { '⛔' }
-                 else { '•' }
-    
-    $statusColor = if ($statusNote -match '^(up to date|already up to date)$') { 'Green' } 
-                  elseif ($statusNote -match 'failed|error') { 'Red' }
-                  elseif ($statusNote -match 'skipped|dirty') { 'Yellow' }
-                  else { 'White' }
-    
-    # Build status text with optional ahead/behind info
-    $statusText = " $statusIcon $statusNote"
-    if ($status.Branch -ne '(detached)' -and ($VerboseBranches -or $ahead -gt 0 -or $behind -gt 0))
-    {
-        $statusText += (Format-Text -Text " (Ahead: $ahead Behind: $behind)" -Color 'Magenta')
-    }
-    
-    Write-Host (Format-Text -Text $statusText -Color $statusColor)
-
-    [PSCustomObject]@{
+    return [PSCustomObject]@{
         Name   = $name
         Branch = $status.Branch
         Ahead  = $ahead
@@ -438,45 +448,144 @@ function Invoke-RepositoryProcessing
         Dirty  = if ($status.Dirty) { 'Yes' } else { 'No' }
         Pulled = $pulled
         Status = $statusNote
+        HasRemote = $true
+        StashMessages = $stashMessages
+        PullMessages = $pullMessages
     }
+}
+
+function Write-RepositoryProgress
+{
+    param (
+        [PSCustomObject]$RepoResult,
+        [int]$RepoIndex = 1,
+        [int]$TotalRepos = 1,
+        [switch]$VerboseBranches
+    )
+
+    # Validate input
+    if (-not $RepoResult -or -not $RepoResult.PSObject.Properties['Name']) {
+        Write-Warning "Invalid RepoResult object passed to Write-RepositoryProgress"
+        return
+    }
+
+    $name = $RepoResult.Name
+    $paddedIndex = $RepoIndex.ToString().PadLeft(2, '0')
+    $paddedTotal = $TotalRepos.ToString().PadLeft(2, '0')
+    $progressText = "[$paddedIndex/$paddedTotal] $name"
+
+    # Write progress without newline so we can add status icon on same line
+    Write-Host (Format-Text -Text $progressText -Color 'Cyan') -NoNewline
+    
+    # Display any stash messages
+    if ($RepoResult.PSObject.Properties['StashMessages'] -and $RepoResult.StashMessages -and $RepoResult.StashMessages.Count -gt 0) {
+        foreach ($msg in $RepoResult.StashMessages) {
+            Write-Host ""
+            Write-Host (Format-Text -Text "  $msg" -Color 'Cyan')
+        }
+        Write-Host (Format-Text -Text $progressText -Color 'Cyan') -NoNewline
+    }
+
+    # Display any pull error messages
+    if ($RepoResult.PSObject.Properties['PullMessages'] -and $RepoResult.PullMessages -and $RepoResult.PullMessages.Count -gt 0) {
+        foreach ($msg in $RepoResult.PullMessages) {
+            Write-Host ""
+            Write-Host (Format-Text -Text "  $msg" -Color 'Red')
+        }
+        Write-Host (Format-Text -Text $progressText -Color 'Cyan') -NoNewline
+    }
+    
+    if (-not $RepoResult.HasRemote)
+    {
+        Write-Host (Format-Text -Text " ⚠ No origin" -Color 'Yellow')
+        return
+    }
+
+    if ($RepoResult.Status -eq $Script:Status.DirtySkipped)
+    {
+        Write-Host (Format-Text -Text ' ⛔ Dirty / skipped' -Color 'Yellow')
+        return
+    }
+
+    # Show completion status with icon on the same line
+    $statusIcon = if ($RepoResult.Status -match $Script:RegexPatterns.UpToDatePattern) { '✅' } 
+                 elseif ($RepoResult.Status -match $Script:RegexPatterns.FailedErrorPattern) { '🔴' }
+                 elseif ($RepoResult.Status -match $Script:RegexPatterns.SkippedDirtyPattern) { '⛔' }
+                 else { '•' }
+    
+    $statusColor = if ($RepoResult.Status -match $Script:RegexPatterns.UpToDatePattern) { 'Green' } 
+                  elseif ($RepoResult.Status -match $Script:RegexPatterns.FailedErrorPattern) { 'Red' }
+                  elseif ($RepoResult.Status -match $Script:RegexPatterns.SkippedDirtyPattern) { 'Yellow' }
+                  else { 'White' }
+    
+    # Build status text with optional ahead/behind info
+    $statusText = " $statusIcon $($RepoResult.Status)"
+    if ($RepoResult.Branch -ne '(detached)' -and ($VerboseBranches -or $RepoResult.Ahead -gt 0 -or $RepoResult.Behind -gt 0))
+    {
+        $statusText += (Format-Text -Text " (Ahead: $($RepoResult.Ahead) Behind: $($RepoResult.Behind))" -Color 'Magenta')
+    }
+    
+    Write-Host (Format-Text -Text $statusText -Color $statusColor)
 }
 
 function Write-Summary
 {
     param (
-        [System.Collections.IEnumerable]$Results,
-        [TimeSpan]$Elapsed
+        $Results,
+        [TimeSpan]$Elapsed,
+        [int]$TotalRepos
     )
 
     Write-Host ''
-    Write-Host (Format-Text -Text 'Summary:' -Color 'Cyan')
+    Write-Host (Format-Text -Text 'REPORT:' -Color 'BrightMagenta')
     
-    $sorted = $Results | Sort-Object Name
-    $allUpToDate = -not ($sorted | Where-Object { 
-        $_.PSObject.Properties['Status'] -and $_.Status -and $_.Status -notmatch '^(up to date|already up to date)$' 
+    # Convert to array to ensure proper pipeline processing
+    $resultsArray = @($Results)
+    $sorted = $resultsArray | Sort-Object Name
+    
+    # Only consider it "all up to date" if ALL statuses are actually "Up to date" or "Already up to date"
+    # Other statuses like "Fetched only", "Pull failed", etc. should show the full table
+    $notUpToDateItems = @($sorted | Where-Object { 
+        $_.PSObject.Properties['Status'] -and $_.Status -and $_.Status -notmatch $Script:RegexPatterns.UpToDatePattern 
     })
+    $allUpToDate = $notUpToDateItems.Count -eq 0
 
-    $branchExpr = @{ Name = 'Branch'; Expression = { if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) { Format-Text -Text $_.Branch -Color 'Cyan' } else { $_.Branch } } }    
-    $dirtyExpr  = @{ Name = 'Dirty';  Expression = { if ($_.Dirty -eq 'Yes') { Get-FailureSymbol } else { Get-SuccessSymbol } } }
-    $pulledExpr = @{ Name = 'Pulled'; Expression = { if ($_.Pulled -eq 'Yes') { Get-SuccessSymbol } else { Get-FailureSymbol } } }
+    # Filter out empty objects
+    $cleanSorted = $sorted | Where-Object { $_ -and $_.PSObject.Properties['Name'] -and $_.Name -and $_.Name.Trim() -ne '' }
+    
+    # Create formatted objects with colors and symbols
+    $formattedData = $cleanSorted | ForEach-Object {
+        $branchFormatted = if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) { 
+            Format-Text -Text $_.Branch -Color 'Cyan' 
+        } else { 
+            $_.Branch 
+        }
 
+        $dirtySymbol = if ($_.Dirty -ne 'Yes') { Get-FailureSymbol } else { Get-SuccessSymbol }
+        $pulledSymbol = if ($_.Pulled -eq 'Yes') { Get-SuccessSymbol } else { Get-FailureSymbol }
+        
+        [PSCustomObject]@{
+            Name = $_.Name
+            Branch = $branchFormatted
+            Dirty = $dirtySymbol
+            Pulled = $pulledSymbol
+            Status = $_.Status
+        }
+    }
+    
     if ($allUpToDate)
     {
         # Omit Status column when everything is Up to date
-        $sorted |
-            Select-Object Name, $branchExpr, $dirtyExpr, $pulledExpr |
-            Format-Table -AutoSize
+        $formattedData | Select-Object Name, Branch, Dirty, Pulled | Format-Table -AutoSize
     }
     else
     {
         # Show Status as the last column when mixed states exist
-        $sorted |
-            Select-Object Name, $branchExpr, $dirtyExpr, $pulledExpr, Status |
-            Format-Table -AutoSize -Wrap
+        $formattedData | Format-Table -AutoSize
     }
 
     Write-Host ''
-    Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $Elapsed.TotalSeconds, ($Results | Measure-Object).Count) -Color 'Green')
+    Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $Elapsed.TotalSeconds, $TotalRepos) -Color 'Green')
 }
 
 function Main
@@ -500,7 +609,8 @@ function Main
     for ($i = 0; $i -lt $repos.Count; $i++)
     {
         $r = $repos[$i]
-        $repoResult = Invoke-RepositoryProcessing -Path $r.FullName -SkipDirty:$SkipDirty -StashDirty:$StashDirty -NoPull:$NoPull -UseRebase:$UseRebase -FetchAllRemotes:$FetchAllRemotes -VerboseBranches:$VerboseBranches -RepoIndex ($i + 1) -TotalRepos $totalRepos
+        $repoResult = Invoke-RepositoryProcessing -Path $r.FullName -SkipDirty:$SkipDirty -StashDirty:$StashDirty -NoPull:$NoPull -UseRebase:$UseRebase -FetchAllRemotes:$FetchAllRemotes
+        Write-RepositoryProgress -RepoResult $repoResult -RepoIndex ($i + 1) -TotalRepos $totalRepos -VerboseBranches:$VerboseBranches
         $results += $repoResult
     }
 
@@ -508,10 +618,10 @@ function Main
     
     # Only show summary in verbose mode
     if ($VerboseBranches) {
-        Write-Summary -Results $results -Elapsed $sw.Elapsed
+        Write-Summary -Results $results -Elapsed $sw.Elapsed -TotalRepos $totalRepos
     } else {
         Write-Host ''
-        Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $sw.Elapsed.TotalSeconds, ($results | Measure-Object).Count) -Color 'Green')
+        Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $sw.Elapsed.TotalSeconds, $totalRepos) -Color 'Green')
         Write-Host ''    
     }
 }
