@@ -436,7 +436,7 @@ function Invoke-SingleRepositoryProcessing
         $statusNote = $note
         if ($ok) 
         { 
-            $pulled = $Script:PulledStatus.Yes
+            $pulled = [PullStatus]::Yes
             $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch 
         }
 
@@ -495,10 +495,15 @@ function Write-RepositoryProgress
     $name = $RepoResult.Name
     $paddedIndex = $RepoIndex.ToString().PadLeft(2, '0')
     $paddedTotal = $TotalRepos.ToString().PadLeft(2, '0')
-    $progressText = "[$paddedIndex/$paddedTotal] $name"
+    
+    # Build enhanced progress text with better formatting
+    $indexPart = Format-Text -Text "[$paddedIndex/$paddedTotal]" -Color 'White'
+    $namePart = Format-Text -Text $name -Color 'Cyan'
+    $branchPart = Format-Text -Text "($($RepoResult.Branch))" -Color 'Magenta'
+    $progressText = "$indexPart $namePart $branchPart"
 
     # Write progress without newline so we can add status icon on same line
-    Write-Host (Format-Text -Text $progressText -Color 'Cyan') -NoNewline
+    Write-Host $progressText -NoNewline
     
     # Display any stash messages
     if ($RepoResult.PSObject.Properties['StashMessages'] -and $RepoResult.StashMessages -and $RepoResult.StashMessages.Count -gt 0) {
@@ -577,7 +582,7 @@ function Write-Summary
     # Create formatted objects with colors and symbols
     $formattedData = $cleanSorted | ForEach-Object {
         $branchFormatted = if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) { 
-            Format-Text -Text $_.Branch -Color 'Cyan' 
+            Format-Text -Text $_.Branch -Color 'Magenta' 
         } else { 
             $_.Branch 
         }
