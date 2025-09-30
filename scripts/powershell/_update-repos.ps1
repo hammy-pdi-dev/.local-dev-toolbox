@@ -17,7 +17,7 @@ $Script:ChildFolderPrefix = 'H'
 
 # -------------------------------------------------------------------------
 
-function Parse-Arguments
+function Get-ParsedArguments
 {
     param([string[]]$ArgList)
 
@@ -84,34 +84,65 @@ function Parse-Arguments
 $Script:CheckMark = '+'
 $Script:CrossMark = 'x'
 
-# Status message constants
-$Script:Status = @{
-    Fetched = 'Fetched'
-    UpToDate = 'Up to date'
-    AlreadyUpToDate = 'Already up to date'
-    FetchedOnly = 'Fetched only'
-    Rebased = 'Rebased'
-    FastForwarded = 'Fast-forwarded'
-    PullFailed = 'Pull failed'
-    DetachedHead = 'Detached HEAD (fetched)'
-    NoRemoteBranch = 'No remote branch'
-    PullError = 'Pull error'
-    SkippedNoOrigin = 'Skipped (no origin)'
-    DirtySkipped = 'Dirty / skipped'
-    StashRestored = ' (Stash restored)'
-    StashConflicts = ' (Stash conflicts)'
+class RepositoryStatus {
+    static [string] $Fetched = 'Fetched'
+    static [string] $UpToDate = 'Up to date'
+    static [string] $AlreadyUpToDate = 'Already up to date'
+    static [string] $FetchedOnly = 'Fetched only'
+    static [string] $Rebased = 'Rebased'
+    static [string] $FastForwarded = 'Fast-forwarded'
+    static [string] $PullFailed = 'Pull failed'
+    static [string] $DetachedHead = 'Detached HEAD (fetched)'
+    static [string] $NoRemoteBranch = 'No remote branch'
+    static [string] $PullError = 'Pull error'
+    static [string] $SkippedNoOrigin = 'Skipped (no origin)'
+    static [string] $DirtySkipped = 'Dirty / skipped'
+    static [string] $StashRestored = ' (Stash restored)'
+    static [string] $StashConflicts = ' (Stash conflicts)'
 }
 
-$Script:PulledStatus = @{
-    Yes = 'Yes'
-    No = 'No'
-    NoOrigin = 'No origin'
-    Skipped = 'Skipped'
+class PullStatus {
+    static [string] $Yes = 'Yes'
+    static [string] $No = 'No'
+    static [string] $NoOrigin = 'No origin'
+    static [string] $Skipped = 'Skipped'
+}
+
+class RepositoryResultFactory {
+    static [PSCustomObject] CreateResult([string]$Name, [string]$Branch, [int]$Ahead, [int]$Behind, 
+                                       [string]$Dirty, [string]$Pulled, [string]$Status, 
+                                       [bool]$HasRemote, [array]$StashMessages, [array]$PullMessages) 
+    {
+        return [PSCustomObject]@{
+            Name = $Name
+            Branch = $Branch
+            Ahead = $Ahead
+            Behind = $Behind
+            Dirty = $Dirty
+            Pulled = $Pulled
+            Status = $Status
+            HasRemote = $HasRemote
+            StashMessages = $StashMessages
+            PullMessages = $PullMessages
+        }
+    }
+    
+    static [PSCustomObject] CreateNoRemoteResult([string]$Name) 
+    {
+        return [RepositoryResultFactory]::CreateResult($Name, '', 0, 0, 'No', 
+            [PullStatus]::NoOrigin, [RepositoryStatus]::SkippedNoOrigin, $false, @(), @())
+    }
+    
+    static [PSCustomObject] CreateDirtySkippedResult([string]$Name, [string]$Branch) 
+    {
+        return [RepositoryResultFactory]::CreateResult($Name, $Branch, 0, 0, 'Yes', 
+            [PullStatus]::Skipped, [RepositoryStatus]::DirtySkipped, $true, @(), @())
+    }
 }
 
 # Pre-compiled regex patterns for performance
 $Script:RegexPatterns = @{
-    UpToDatePattern = "^($([regex]::Escape($Script:Status.UpToDate))|$([regex]::Escape($Script:Status.AlreadyUpToDate)))$"
+    UpToDatePattern = "^($([regex]::Escape([RepositoryStatus]::UpToDate))|$([regex]::Escape([RepositoryStatus]::AlreadyUpToDate)))$"
     FailedErrorPattern = 'failed|error'
     SkippedDirtyPattern = 'skipped|dirty'
 }
@@ -288,19 +319,19 @@ function Invoke-GitPull
     
     try {
         if ($Branch -eq '(detached)') { 
-            return $false, $Script:Status.DetachedHead 
+            return $false, [RepositoryStatus]::DetachedHead 
         }
         
         # Verify remote branch exists
         $remoteExists = git -C $Path rev-parse --verify "origin/$Branch" 2>$null
         if (-not $remoteExists -or $LASTEXITCODE -ne 0) { 
-            return $false, "$($Script:Status.NoRemoteBranch) origin/$Branch" 
+            return $false, "$([RepositoryStatus]::NoRemoteBranch) origin/$Branch" 
         }
         
         # Check if pull is needed
         $ahead, $behind = Get-AheadBehind -Path $Path -Branch $Branch
         if ($behind -eq 0) {
-            return $true, $Script:Status.AlreadyUpToDate
+            return $true, [RepositoryStatus]::AlreadyUpToDate
         }
         
         # Prepare pull arguments
@@ -324,19 +355,19 @@ function Invoke-GitPull
         }
         
         if ($success) {
-            $statusText = if ($Rebase) { $Script:Status.Rebased } else { $Script:Status.FastForwarded }
+            $statusText = if ($Rebase) { [RepositoryStatus]::Rebased } else { [RepositoryStatus]::FastForwarded }
         } else {
             $statusText = if ($errorMessages) { 
-                "$($Script:Status.PullFailed): $($errorMessages[0])" 
+                "$([RepositoryStatus]::PullFailed): $($errorMessages[0])" 
             } else { 
-                $Script:Status.PullFailed 
+                [RepositoryStatus]::PullFailed 
             }
         }
         
         return $success, $statusText
     }
     catch {
-        return $false, "$($Script:Status.PullError): $($_.Exception.Message)"
+        return $false, "$([RepositoryStatus]::PullError): $($_.Exception.Message)"
     }
 }
 
@@ -363,7 +394,7 @@ function Pop-StashIfPresent
     return $ok
 }
 
-function Invoke-RepositoryProcessing
+function Invoke-SingleRepositoryProcessing
 {
     param (
         [string]$Path, [switch]$SkipDirty, [switch]$StashDirty, [switch]$NoPull,
@@ -375,21 +406,13 @@ function Invoke-RepositoryProcessing
     $remoteExists = (git -C $Path remote 2>$null) -contains 'origin'
     if (-not $remoteExists)
     {
-        return [PSCustomObject]@{ 
-            Name=$name; Branch=''; Ahead=0; Behind=0; Dirty='No'; 
-            Pulled=$Script:PulledStatus.NoOrigin; Status=$Script:Status.SkippedNoOrigin;
-            HasRemote=$false; StashMessages=@(); PullMessages=@()
-        }
+        return [RepositoryResultFactory]::CreateNoRemoteResult($name)
     }
 
     $status = Get-RepoStatus -Path $Path
     if ($status.Dirty -and $SkipDirty)
     {
-        return [PSCustomObject]@{ 
-            Name=$name; Branch=$status.Branch; Ahead=0; Behind=0; Dirty='Yes'; 
-            Pulled=$Script:PulledStatus.Skipped; Status=$Script:Status.DirtySkipped;
-            HasRemote=$true; StashMessages=@(); PullMessages=@()
-        }
+        return [RepositoryResultFactory]::CreateDirtySkippedResult($name, $status.Branch)
     }
 
     $stashRef = $null
@@ -402,8 +425,8 @@ function Invoke-RepositoryProcessing
 
     $null = Invoke-GitFetch -Path $Path -All:$FetchAllRemotes
     $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch
-    $pulled = $Script:PulledStatus.No
-    $statusNote = $Script:Status.Fetched
+    $pulled = [PullStatus]::No
+    $statusNote = [RepositoryStatus]::Fetched
     $needPull = $behind -gt 0
     $pullMessages = @()
 
@@ -417,24 +440,24 @@ function Invoke-RepositoryProcessing
             $ahead, $behind = Get-AheadBehind -Path $Path -Branch $status.Branch 
         }
 
-        if (-not $ok -and $note -eq $Script:Status.PullFailed) 
+        if (-not $ok -and $note -eq [RepositoryStatus]::PullFailed) 
         { 
             $pullMessages += 'Pull failed (merge/rebase needed). Manual intervention required.'
         }
     }
     elseif (-not $NoPull -and -not $needPull) 
     { 
-        $statusNote = $Script:Status.UpToDate 
+        $statusNote = [RepositoryStatus]::UpToDate 
     }
     elseif ($NoPull) 
     { 
-        $statusNote = $Script:Status.FetchedOnly 
+        $statusNote = [RepositoryStatus]::FetchedOnly 
     }
 
     if ($stashRef)
     {
         $ok = Pop-StashIfPresent -Path $Path
-        if ($ok) { $statusNote += $Script:Status.StashRestored } else { $statusNote += $Script:Status.StashConflicts }
+        if ($ok) { $statusNote += [RepositoryStatus]::StashRestored } else { $statusNote += [RepositoryStatus]::StashConflicts }
         # Quick dirty check without full status call
         $quickStatus = git -C $Path status --porcelain 2>$null
         $status.Dirty = -not [string]::IsNullOrWhiteSpace($quickStatus)
@@ -501,7 +524,7 @@ function Write-RepositoryProgress
         return
     }
 
-    if ($RepoResult.Status -eq $Script:Status.DirtySkipped)
+    if ($RepoResult.Status -eq [RepositoryStatus]::DirtySkipped)
     {
         Write-Host (Format-Text -Text ' ⛔ Dirty / skipped' -Color 'Yellow')
         return
@@ -543,8 +566,6 @@ function Write-Summary
     $resultsArray = @($Results)
     $sorted = $resultsArray | Sort-Object Name
     
-    # Only consider it "all up to date" if ALL statuses are actually "Up to date" or "Already up to date"
-    # Other statuses like "Fetched only", "Pull failed", etc. should show the full table
     $notUpToDateItems = @($sorted | Where-Object { 
         $_.PSObject.Properties['Status'] -and $_.Status -and $_.Status -notmatch $Script:RegexPatterns.UpToDatePattern 
     })
@@ -588,52 +609,98 @@ function Write-Summary
     Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $Elapsed.TotalSeconds, $TotalRepos) -Color 'Green')
 }
 
-function Main
+function Check-Prerequisites
 {
     if (-not (Test-Path -Path $RootPath -PathType Container)) 
     { 
-        Write-Error "RootPath '$RootPath' does not exist or is not a directory."; 
-        exit 1 
+        Write-Error "RootPath '$RootPath' does not exist or is not a directory.";
+        $global:LASTEXITCODE = 1;
+        return $false;
     }
 
+    return $true;
+}
+
+function Get-RepositoriesForProcessing
+{
     Write-Host (Format-Text -Text "Scanning '$RootPath' for repositories starting with '$Script:ChildFolderPrefix'... " -Color 'Cyan')
+    
     $repos = Get-Repositories -Root $RootPath
     if (-not $repos) { 
-        Write-Warning 'No repositories found matching pattern.'; return 
+        Write-Warning 'No repositories found matching pattern.';
+        return $null;
     }
+    
+    return $repos;
+}
 
+function Invoke-RepositoryProcessing
+{
+    param([array]$Repositories)
+    
     $results = @()
-    $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    $totalRepos = $repos.Count
+    if (-not $Repositories -or $Repositories.Count -eq 0) {
+        Write-Warning "No repositories provided for processing";
+        return $results;
+    }
+    
+    for ($i = 0; $i -lt $Repositories.Count; $i++) {
+        $repo = $Repositories[$i]
 
-    for ($i = 0; $i -lt $repos.Count; $i++)
-    {
-        $r = $repos[$i]
-        $repoResult = Invoke-RepositoryProcessing -Path $r.FullName -SkipDirty:$SkipDirty -StashDirty:$StashDirty -NoPull:$NoPull -UseRebase:$UseRebase -FetchAllRemotes:$FetchAllRemotes
-        Write-RepositoryProgress -RepoResult $repoResult -RepoIndex ($i + 1) -TotalRepos $totalRepos -VerboseBranches:$VerboseBranches
+        $repoResult = Invoke-SingleRepositoryProcessing -Path $repo.FullName -SkipDirty:$SkipDirty -StashDirty:$StashDirty -NoPull:$NoPull -UseRebase:$UseRebase -FetchAllRemotes:$FetchAllRemotes
+        Write-RepositoryProgress -RepoResult $repoResult -RepoIndex ($i + 1) -TotalRepos $Repositories.Count -VerboseBranches:$VerboseBranches
+        
         $results += $repoResult
     }
 
-    $sw.Stop()
+    return $results
+}
+
+function Write-CompletionSummary
+{
+    param([array]$Results, [System.TimeSpan]$Elapsed, [int]$TotalRepos)
     
-    # Only show summary in verbose mode
     if ($VerboseBranches) {
-        Write-Summary -Results $results -Elapsed $sw.Elapsed -TotalRepos $totalRepos
+        Write-Summary -Results $Results -Elapsed $Elapsed -TotalRepos $TotalRepos
     } else {
         Write-Host ''
-        Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $sw.Elapsed.TotalSeconds, $totalRepos) -Color 'Green')
-        Write-Host ''    
+        Write-Host (Format-Text -Text ("Completed in {0:0.0}s for {1} repositories." -f $Elapsed.TotalSeconds, $TotalRepos) -Color 'Green')
+        Write-Host ''
     }
 }
 
-$__parsed = Parse-Arguments -ArgList $args
+function Main
+{
+    # Validate prerequisites
+    if (-not (Check-Prerequisites)) { return }
+    
+    # Discover repositories to process
+    $repos = Get-RepositoriesForProcessing
+    if (-not $repos) { return }
+    
+    # Process repositories
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $results = Invoke-RepositoryProcessing -Repositories $repos
+    $sw.Stop()
+    
+    # Show completion summary
+    Write-CompletionSummary -Results $results -Elapsed $sw.Elapsed -TotalRepos $repos.Count
+}
+
+$__parsed = Get-ParsedArguments -ArgList $args
 
 if ($__parsed.Invalid.Count -gt 0)
 {
-    Write-Host (Format-Text -Text 'Unrecognized option(s):' -Color 'Red')
-    $__parsed.Invalid | ForEach-Object { Write-Host (Format-Text -Text "  $_" -Color 'Red') }
-    Write-Host (Format-Text -Text 'See details inside the script to view supported parameters.' -Color 'Yellow')
-    exit 2
+    Write-Host (Format-Text -Text 'Unrecognized option(s):' -Color 'Red');
+
+    $__parsed.Invalid | ForEach-Object { 
+        Write-Host (Format-Text -Text "  $_" -Color 'Red') 
+    }
+    
+    Write-Host (Format-Text -Text 'See details inside the script to view supported parameters.' -Color 'Yellow');
+
+    $global:LASTEXITCODE = 2;
+    return
 }
 
 $RootPath        = $__parsed.RootPath
