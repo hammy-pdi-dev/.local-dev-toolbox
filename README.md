@@ -6,8 +6,10 @@ Developer automation and environment setup scripts.
 
 
 ### Scripts
+- `scripts/git-hooks/commit-msg` – Git hook that automatically prefixes commit messages with ticket numbers extracted from branch names.
 - `scripts/powershell/_update-repos.ps1` – Batch fetch/pull for multiple Git repositories by prefix.
-- todo
+- `scripts/powershell/git-history.ps1` – Generate formatted release notes from Git commit history for specified time periods.
+- to be added...
 
 ## Quick Start
 1. Clone this repository.

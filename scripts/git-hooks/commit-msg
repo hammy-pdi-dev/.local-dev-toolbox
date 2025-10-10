@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# NOTES:
+# This script prefixes commit messages with ticket numbers extracted from branch names.
+# It also adds a tag to the commit message if the branch name contains a second number.
+# Copy this file into your your repository in `.git/hooks/` folder. 
+
+# Ticket number pattern
+NUMBER_PATTERN="([0-9]+)([-_]([0-9]+))?"
+
+# Branch name pattern matching
+BRANCH_WITH_NUMBERS="^${NUMBER_PATTERN}"
+FEATURE_WITH_NUMBERS="^feature/${NUMBER_PATTERN}"
+BUGFIX_WITH_NUMBERS="^bugfix/${NUMBER_PATTERN}"
+HOTFIX_WITH_NUMBERS="^hotfix/${NUMBER_PATTERN}"
+
+# Get the current branch name
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$branch_name" == "master" ]] || [[ "$branch_name" == "main" ]] || [[ "$branch_name" == "develop" ]]; then
+    echo "Info: Skipping commit message prefix for branch: '$branch_name'."
+    exit 0
+fi
+
+if [[ $branch_name =~ $BRANCH_WITH_NUMBERS ]] || [[ $branch_name =~ $FEATURE_WITH_NUMBERS ]] || [[ $branch_name =~ $BUGFIX_WITH_NUMBERS ]]; then
+    ticket_number="${BASH_REMATCH[1]}"     # First number in the branch name (ticket number)
+    ticket_number_tag="${BASH_REMATCH[3]}" # Second number, if present (tag ticket, empty otherwise)
+else
+    echo "Error: Branch name:'$branch_name'. The branch name must follow the pattern feature/<number>-xxxx."
+    exit 1
+fi
+
+# Read the commit message from the file passed to the hook
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# Check if the commit message already starts with a digit or #<digits>
+if [[ $commit_msg =~ ^[0-9]+ ]] || [[ $commit_msg =~ ^#[0-9]+ ]]; then
+    echo "Info: Skipping commit message prefix as message already starts with a digits or #<digits>."
+    exit 0
+fi
+
+# Format the new commit message
+if [[ -n "$ticket_number_tag" ]]; then
+    new_commit_msg="$ticket_number - $commit_msg\nTag: $ticket_number_tag"
+else
+    new_commit_msg="$ticket_number - $commit_msg"
+fi
+
+# Write the new commit message back to the file
+echo -n "$new_commit_msg" > "$commit_msg_file"
