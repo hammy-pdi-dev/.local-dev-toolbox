@@ -5,7 +5,7 @@
 	<vGPU>Disable</vGPU>
 	<MappedFolders>
 		<MappedFolder>
-			<HostFolder>D:\Repos\.local-dev-toolbox\scripts\powershell</HostFolder>
+			<HostFolder>D:\Repos\.local-dev-toolbox\scripts\powershell\sandbox</HostFolder>
 			<SandboxFolder>C:\TEMP</SandboxFolder>
 			<ReadOnly>false</ReadOnly>
 		</MappedFolder>

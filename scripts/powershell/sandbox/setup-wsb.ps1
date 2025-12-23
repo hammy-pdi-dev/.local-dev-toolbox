@@ -59,16 +59,12 @@ if (-not (Test-Path $DownloadsFolder)) {
     New-Item -ItemType Directory -Path $DownloadsFolder -Force | Out-Null
 }
 
-# Check .NET Framework versions
-Write-Log "Checking .NET Framework versions..." -Level INFO
-$dotNetVersions = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\' -ErrorAction SilentlyContinue | 
-    Get-ItemProperty -Name Release -ErrorAction SilentlyContinue | 
-    Select-Object @{Name="Version"; Expression={$_.Release}}
+# Check .NET Framework versions 4.6.1 and 4.8
+$dotNet461 = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\' -ErrorAction SilentlyContinue | Get-ItemPropertyValue -Name Release -ErrorAction SilentlyContinue
+$dotNet48 = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\' -ErrorAction SilentlyContinue | Get-ItemPropertyValue -Name Release -ErrorAction SilentlyContinue
 
-if ($dotNetVersions) {
-    Write-Log ".NET Framework 4.x detected (Release: $($dotNetVersions.Version))" -Level SUCCESS
-} else {
-    Write-Log ".NET Framework 4.x not detected. Check $DownloadsFolder for installer." -Level WARNING
+if (-not $dotNet461 -and -not $dotNet48) {
+    Write-Log ".NET Framework 4.6.1 or 4.8 not detected. Please install manually if needed." -Level WARNING
 }
 
 # Install winget
@@ -107,8 +103,8 @@ try {
         }
         
         # Wait for installation to complete and processes to settle
-        Write-Log "Waiting for installation to finalize (30 seconds)..." -Level INFO
-        Start-Sleep -Seconds 30
+        Write-Log "Waiting for installation to finalize (6 seconds)..." -Level INFO
+        Start-Sleep -Seconds 6
         
         # Refresh environment variables multiple times to ensure they're loaded
         Write-Log "Refreshing environment variables..." -Level INFO
@@ -174,10 +170,17 @@ if (-not $wingetVerified) {
 
 # Install packages using winget
 $wingetPackages = @(
+    @{Name="Azure CLI"; Id="Microsoft.AzureCLI"},
+    @{Name="Chromium"; Id="Hibbiki.Chromium"}, 
+    @{Name="Git"; Id="Git.Git"},
     @{Name="Notepad++"; Id="Notepad++.Notepad++"},
-    @{Name="7-Zip"; Id="7zip.7zip"},
-    @{Name="Git"; Id="Git.Git"}
+    @{Name="7-Zip"; Id="7zip.7zip"}    
 )
+
+# Add dotnet 8 SDK from list if not found if (-not $dotNet461 -and -not $dotNet48)
+if (-not $dotNet461 -and -not $dotNet48) {
+    $wingetPackages += @{Name="Dotnet 8 SDK"; Id="Microsoft.DotNet.SDK.8"}
+} 
 
 foreach ($package in $wingetPackages) {
     Write-Log "Installing $($package.Name) via winget..." -Level INFO
@@ -236,25 +239,6 @@ try {
     Write-Log "Chocolatey source 'choco-dev' added successfully" -Level SUCCESS
 } catch {
     Write-Log "Failed to add Chocolatey source: $_" -Level ERROR
-}
-
-# Install Barracuda VPN (if available via winget or choco)
-Write-Log "Attempting to install Barracuda VPN Network Access Client Service..." -Level INFO
-try {
-    # Try winget first
-    winget install "Barracuda VPN" --silent --accept-source-agreements --accept-package-agreements
-    Write-Log "Barracuda VPN installation completed" -Level SUCCESS
-} catch {
-    Write-Log "Barracuda VPN installation skipped or failed. Check $DownloadsFolder for manual installer." -Level WARNING
-}
-
-# Install UltraVNC 1.4.3.6
-Write-Log "Installing UltraVNC version 1.4.3.6..." -Level INFO
-try {
-    choco install ultravnc --version=1.4.3.6 -y --force
-    Write-Log "UltraVNC 1.4.3.6 installation completed" -Level SUCCESS
-} catch {
-    Write-Log "Failed to install UltraVNC: $_" -Level ERROR
 }
 
 # Install Node.js 14.21.3 directly via Chocolatey (skip NVM due to Windows Sandbox temp file issues)
