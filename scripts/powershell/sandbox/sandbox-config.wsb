@@ -1,0 +1,17 @@
+<Configuration>
+	<Networking>Enable</Networking>
+	<ClipboardRedirection>Enable</ClipboardRedirection>
+	<MemoryInMB>8192</MemoryInMB>
+	<vGPU>Disable</vGPU>
+	<MappedFolders>
+		<MappedFolder>
+			<HostFolder>D:\Repos\.local-dev-toolbox\scripts\powershell</HostFolder>
+			<SandboxFolder>C:\TEMP</SandboxFolder>
+			<ReadOnly>false</ReadOnly>
+		</MappedFolder>
+	</MappedFolders>
+	<LogonCommand>
+		<!--Command>powershell.exe -NoExit -ExecutionPolicy Bypass -File C:\TEMP\setup-wsb.ps1</Command-->
+		<Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList '-NoExit -ExecutionPolicy Bypass -File C:\TEMP\setup-wsb.ps1' -Verb RunAs"</Command>
+	</LogonCommand>
+</Configuration>
