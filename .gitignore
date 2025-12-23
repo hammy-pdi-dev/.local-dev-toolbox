@@ -1,0 +1,15 @@
+# Windows Sandbox Setup
+/scripts/powershell/sandbox/.idea/
+/scripts/powershell/sandbox/x_bin/
+/scripts/powershell/Downloads/
+/scripts/powershell/Downloads/Simulators/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.old
