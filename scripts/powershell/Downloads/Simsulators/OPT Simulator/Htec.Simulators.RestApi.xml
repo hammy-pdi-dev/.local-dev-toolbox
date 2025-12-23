@@ -1,0 +1,616 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Htec.Simulators.RestApi</name>
+    </assembly>
+    <members>
+        <member name="T:Htec.Simulators.RestApi.Config.FilterConfig">
+            <summary>
+            The filter configuration.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.FilterConfig.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Create and configure the class
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.FilterConfig.Register(System.Web.Http.HttpConfiguration)">
+            <summary>
+            Registers any filters.
+            </summary>
+            <param name="config">The http configuration.</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Config.RestApiHttpConfig">
+            <summary>
+            Configure the http 
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.RestApiHttpConfig.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Boolean)">
+            <summary>
+            Creates  new instance of the <see cref="T:Htec.Simulators.RestApi.Config.RestApiHttpConfig"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="configureHttpTracing">Should http tracing be enabled?</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.RestApiHttpConfig.Register(System.Web.Http.HttpConfiguration)">
+            <summary>
+            Configure the supplied http component 
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.RestApiHttpConfig.ConfigureFormatters(System.Web.Http.HttpConfiguration)">
+            <summary>
+            Remove formatting type of xml to ensure returns json.
+            </summary>
+            <param name="config"></param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.RestApiHttpConfig.MapHttpRoutes(System.Web.Http.HttpRouteCollection)">
+            <summary>
+            Set up the http routing
+            </summary>
+            <param name="httpRouteCollection"></param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.RestApiHttpConfig.ConfigureServices(System.Web.Http.Controllers.ServicesContainer)">
+            <summary>
+            ConfigureException handler and default error handler
+            </summary>
+            <param name="servicesContainer"></param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Config.SwaggerConfig">
+            <summary>
+            The Swagger configuration.
+            Note many options are commented out, but left in as a template.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.SwaggerConfig.#ctor(System.IO.Abstractions.IFileSystem,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Config.SwaggerConfig"/> class.
+            </summary>
+            <param name="fileSystem">Abstracted file system.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.SwaggerConfig.Register(System.Web.Http.HttpConfiguration,Htec.Simulators.RestApi.Creators.ApiConfiguration)">
+            <summary>
+            Registers the Swagger configuration.
+            <remarks>
+            Works with http://localhost/XXX/swagger/ui/index for the interactive UI,
+              and http://localhost/XXX/swagger/docs/v1 for the API JSO
+            where XXX is the ApiName.
+            </remarks>
+            </summary>
+            <param name="httpConfiguration">The configuration.</param>
+            <param name="apiConfiguration">Configuration for the API.</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Config.WebApiCustomDirectRouteProvider">
+            <summary>
+            Custom route provider to handle inherited controllers.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Config.WebApiCustomDirectRouteProvider.GetActionRouteFactories(System.Web.Http.Controllers.HttpActionDescriptor)">
+            <inheritdoc />
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2">
+            <summary>
+            Core Controller for overall simulator actions.
+            </summary>
+            <typeparam name="TStatus">Type used to return the status of the simulator.</typeparam>
+            <typeparam name="TId">Type used for the simulator object identifier.</typeparam>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Simulator">
+            <summary>
+            The simulator.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.#ctor(Htec.Simulators.RestApi.Interfaces.ISimulator{`0,`1},Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2"/> class.
+            </summary>
+            <param name="simulator">The simulator.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Info">
+            <summary>
+            Returns information on the simulator application.
+            </summary>
+            <returns>Simulator info.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Start(System.Collections.Generic.IEnumerable{`1})">
+            <summary>
+            Starts the simulator.
+            </summary>
+            <param name="ids">Ids of the simulator objects to start.</param>
+            <returns>Current status of the simulator.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Stop(System.Collections.Generic.IEnumerable{`1})">
+            <summary>
+            Stops the simulator.
+            </summary>
+            <param name="ids">Ids of the simulator objects to stop.</param>
+            <returns>Current status of the simulator.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Trace">
+            <summary>
+            Gets the current trace contents.
+            </summary>
+            <returns>Trace messages.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.CoreSimulatorController`2.Status">
+            <summary>
+            Gets the current status of the simulator.
+            </summary>
+            <returns>Simulator status.</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Controllers.SimulatorApiController">
+            <summary>
+            Base class for API controllers.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.SimulatorApiController.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,Htec.Common.Abstractions.Configuration.Interfaces.IConfigurationManager)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Controllers.SimulatorApiController"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="configurationManager">Optional configuration manager.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.SimulatorApiController.CallSimulatorFunction``1(System.Func{System.Threading.Tasks.Task{CSharpFunctionalExtensions.Result{``0}}},System.String)">
+            <summary>
+            Calls the specified simulator function with standardized logging and response handling
+            </summary>
+            <typeparam name="T">Type of object returned.</typeparam>
+            <param name="simulatorFunc">Simulator function to call.</param>
+            <param name="methodName">Name of calling method</param>
+            <returns>Formatted response.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Controllers.SimulatorApiController.GenerateResponse``1(CSharpFunctionalExtensions.Result{``0})">
+            <summary>
+            Converts the success of a <see cref="T:CSharpFunctionalExtensions.Result"/> to a valid HTTP response code.
+            </summary>
+            <typeparam name="T">Type of object returned if success.</typeparam>
+            <param name="result">Result of action.</param>
+            <returns>HTTP Response</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.ApiConfiguration">
+            <summary>
+            Configuration object for creating a self hosted API.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.PortNumber">
+            <summary>
+            Port to access the API on.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.ApiName">
+            <summary>
+            Name of the API.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.ApiVersion">
+            <summary>
+            Version of the API.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.XmlDocuments">
+            <summary>
+            XML documentation files to populate Swagger.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.ConfigureHttpTracing">
+            <summary>
+            Should HTTP tracing be enabled.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.ApiConfiguration.Description">
+            <summary>
+            Description of the API's purpose.
+            </summary>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.EmbeddedResource">
+            <summary>
+            Configuration for embedded resources for local file server.
+            </summary>
+        </member>
+        <member name="F:Htec.Simulators.RestApi.Creators.EmbeddedResource.DefaultRootFolder">
+            <summary>
+            Default root folder for embedded resources.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.EmbeddedResource.Assembly">
+            <summary>
+            Embedded resource assembly.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.EmbeddedResource.RootFolder">
+            <summary>
+            Returns <see cref="F:Htec.Simulators.RestApi.Creators.EmbeddedResource.DefaultRootFolder"/> if not set.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.EmbeddedResource.BaseNamespace">
+            <summary>
+            The base namespace that contains the embedded resources.
+            </summary>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.Interfaces.IHostCreator">
+            <summary>
+            Interface for creating a self-hosted REST API.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.Interfaces.IHostCreator.Initialise(Htec.Simulators.RestApi.Creators.ApiConfiguration,Htec.Simulators.RestApi.Creators.EmbeddedResource,System.Collections.Generic.ICollection{System.Net.IPAddress},Htec.Simulators.RestApi.Creators.SignalRConfig)">
+            <summary>
+            Build the web app and start hosting the API.
+            </summary>
+            <param name="apiConfiguration">Configuration for the API.</param>
+            <param name="embeddedResource">Configuration containing embedded frontend information.</param>
+            <param name="addressesToIgnore">Collection of IP addresses, or masks, to ignore when binding to the API.</param>
+            <param name="signalRConfig">SignalR configuration.</param>
+            <remarks>Addresses are counted as masks from the first byte with a value of zero e.g. 192.168.0.0 will remove any addresses found within the 192.168 range.</remarks>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.SignalRConfig">
+            <summary>
+            The SignalR configuration
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.SignalRConfig.AllowedOrigins">
+            <summary>
+            Allowed origins for clients to connect to signalR server. "*" for any.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Creators.SignalRConfig.DependencyResolver">
+            <summary>
+            The app dependency resolver.
+            </summary>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder">
+            <summary>
+            The equivalent to the Global.Asax.cs in a Web application
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder.#ctor(System.IO.Abstractions.IFileSystem,Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Web.Http.Dependencies.IDependencyResolver)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder"/> class.
+            </summary>
+            <param name="fileSystem">The abstracted file system.</param>
+            <param name="logger">The logger.</param>
+            <param name="dependencyResolver">Resolver for dependency injection.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder.Configure(Owin.IAppBuilder,Htec.Simulators.RestApi.Creators.ApiConfiguration,Htec.Simulators.RestApi.Creators.EmbeddedResource,Htec.Simulators.RestApi.Creators.SignalRConfig)">
+            <summary>
+            Configuration : Creates and manages the http configuration. 
+            </summary>
+            <param name="appBuilder">OWIN app builder</param>
+            <param name="apiConfiguration">Configuration for the API.</param>
+            <param name="embeddedResource">UI resources embedded in an assembly.</param>
+            <param name="signalRConfig">SignalR configuration.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder.ConfigureFileServer(Owin.IAppBuilder,Htec.Simulators.RestApi.Creators.EmbeddedResource)">
+            <summary>
+            Configures an embedded resource so it can be served
+            </summary>
+            <param name="appBuilder">OWIN app builder</param>
+            <param name="embeddedResource">The embedded resource</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppConfigurationBuilder.ConfigureSignalR(Owin.IAppBuilder,Htec.Simulators.RestApi.Creators.SignalRConfig)">
+            <summary>
+            Configures SignalR server
+            </summary>
+            <param name="appBuilder">OWIN app builder</param>
+            <param name="signalRConfig">SignalR configuration</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator">
+            <summary>
+            Class to create and initialise a Restful HTTP Server using Owin
+            </summary>
+        </member>
+        <member name="F:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator._webApp">
+            <summary>
+            The webapp itself - needs to exist outside of the method creating it to ensure it remains active, and to allow the disposal to work.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator.BaseUrl">
+            <summary>
+            Get the BaseConnection "http://localhost:{PortNumber}/{ApiName}".
+            </summary>
+            <returns>A string representing the base connection.</returns>
+            <remarks>The standard routes added to this would be something like http://localhost:12456/example/simulator/trace/. </remarks>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator.#ctor(System.IO.Abstractions.IFileSystem,System.Web.Http.Dependencies.IDependencyResolver,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator"/> class.
+            </summary>
+            <param name="fileSystem">The abstracted file system.</param>
+            <param name="dependencyResolver">The resolver for dependencies.</param>
+            <param name="logger">The htec logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator.Initialise(Htec.Simulators.RestApi.Creators.ApiConfiguration,Htec.Simulators.RestApi.Creators.EmbeddedResource,System.Collections.Generic.ICollection{System.Net.IPAddress},Htec.Simulators.RestApi.Creators.SignalRConfig)">
+            <inheritdoc />
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Creators.WebApp.WebAppCreator.DoDisposeDisposing">
+            <inheritdoc />
+        </member>
+        <member name="T:Htec.Simulators.RestApi.DefaultExceptionHandler">
+            <summary>
+            Default Exception handler
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.DefaultExceptionHandler.Handle(System.Web.Http.ExceptionHandling.ExceptionHandlerContext)">
+            <summary>
+            Handles the exception synchronously.
+            </summary>
+            <param name="context">The exception handler context.</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.TextPlainErrorResult">
+            <summary>
+            Error result using plain text.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.TextPlainErrorResult.Request">
+            <summary>
+            The originating request.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.TextPlainErrorResult.Content">
+            <summary>
+            Response content.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.TextPlainErrorResult.ExecuteAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Extensions.ListInterfaceExtensions">
+            <summary>
+            Extensions for <see cref="T:System.Collections.Generic.IList`1"/>.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Extensions.ListInterfaceExtensions.AppendRange``1(System.Collections.Generic.IList{``0},System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            provides a way to add multiple entries to an existing one
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="updateList">the list to update</param>
+            <param name="additionalEntries">the items to add </param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Extensions.ModelStateDictionaryExtensions">
+            <summary>
+            Extensions to the <see cref="T:System.Web.Http.ModelBinding.ModelStateDictionary"/> class.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Extensions.ModelStateDictionaryExtensions.LogValues(System.Web.Http.ModelBinding.ModelStateDictionary)">
+            <summary>
+            Extracts all ModelState.Values().Errors().ErrorMessage
+            </summary>
+            <param name="modelState"></param>
+            <returns>Concatenated error messages.</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Extensions.StaticFileResponseContentExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Owin.StaticFiles.StaticFileResponseContext"/>.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Extensions.StaticFileResponseContentExtensions.AddResponseHeaders(Microsoft.Owin.StaticFiles.StaticFileResponseContext)">
+            <summary>
+            Adds OWASP recommended headers
+            </summary>
+            <param name="context">StaticFileResponseContext</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Factories.HostCreatorFactory">
+            <summary>
+            Factory for creating instances of <see cref="T:Htec.Simulators.RestApi.Creators.Interfaces.IHostCreator"/>.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Factories.HostCreatorFactory.#ctor(System.IO.Abstractions.IFileSystem,System.Web.Http.Dependencies.IDependencyResolver,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Factories.HostCreatorFactory"/>.
+            </summary>
+            <param name="fileSystem">The abstracted file system.</param>
+            <param name="dependencyResolver">The resolver for dependencies.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Factories.HostCreatorFactory.DoGetInstance(System.Object[])">
+            <inheritdoc />
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Filters.ModelValidationFilterAttribute">
+            <summary>
+            Custom model validation filter
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Filters.ModelValidationFilterAttribute.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Filters.ModelValidationFilterAttribute"/> class.
+            </summary>
+            <param name="logger">The Htec logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Filters.ModelValidationFilterAttribute.OnActionExecuting(System.Web.Http.Controllers.HttpActionContext)">
+            <summary>
+            Returns a BadRequest if model validation fails
+            </summary>
+            <param name="actionContext">The context for the action</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Helpers.LocalAddressHelper">
+            <summary>
+            Helper for generating API URLs for local IP addresses.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.LocalAddressHelper.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Helpers.LocalAddressHelper"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.LocalAddressHelper.GetUrls(System.Int32,System.String,System.Collections.Generic.ICollection{System.Net.IPAddress})">
+            <summary>
+            Get all required Ip Addresses and make into URLs.
+            </summary>
+            <param name="portNumber">TCP port number.</param>
+            <param name="apiName">Root name of API.</param>
+            <param name="addressesToIgnore">IP addresses, or masks, to ignore from mapping.</param>
+            <returns>list of Ip Addresses.</returns>
+            <remarks>Addresses are counted as masks from the first byte with a value of zero e.g. 192.168.0.0 will remove any addresses found within the 192.168 range.</remarks>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.LocalAddressHelper.BuildUrl(System.String,System.Int32,System.String)">
+            <summary>
+            Builds a url using the supplied ipAddress, and the stored port number, and apiName.
+            </summary>
+            <param name="ipAddress">Target IP address.</param>
+            <param name="portNumber">TCP port number.</param>
+            <param name="apiName">Root name of API.</param>
+            <returns>formatted protocol specific url.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.LocalAddressHelper.LocalIpAddresses(System.Collections.Generic.ICollection{System.Net.IPAddress})">
+            <summary>
+            Gets a list of local IP addresses to register with.
+            </summary>
+            <param name="addressesToIgnore"></param>
+            <returns>A list of IP addresses.</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Helpers.RestApiCheckHelper">
+            <summary>
+            Helper for checking connectivity to an API.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.RestApiCheckHelper.#ctor(Htec.Common.Abstractions.Net.Http.Interfaces.IHttpClientFactory,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Helpers.RestApiCheckHelper"/> class.
+            </summary>
+            <param name="httpClientFactory">Factory for HTTPClient abstractions.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.RestApiCheckHelper.CheckConnection(System.String,System.String)">
+            <summary>
+            Check the REST API is working by checking the connection can be accessed by an http client.
+            </summary>
+            <param name="baseConnection">the base connection string</param>
+            <param name="apiCall">The API route to use e.g. "GetInfo" </param>
+            <returns>Returns Success if connection is ok with a connection message, Failure if connection check failed, with a reason in the error message
+            - Success = if http client was able to talk using the supplied apiCall (200 response received)
+            </returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Helpers.RestApiCheckHelper.TestRootUrl(System.String)">
+            <summary>
+            Query using GetAsync to check the connection.
+            </summary>
+            <param name="requestUrl">URL to get.</param>
+            <returns>Result of test.</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Interfaces.IHostCreatorFactory">
+            <summary>
+            Factory for creating instances of <see cref="T:Htec.Simulators.RestApi.Creators.Interfaces.IHostCreator"/>.
+            </summary>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Interfaces.ISimulator`2">
+            <summary>
+            Interface for common simulator functions.
+            </summary>
+            <typeparam name="TStatus">Type if status object.</typeparam>
+            <typeparam name="TId">Type of parameter used for id.</typeparam>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Interfaces.ISimulator`2.GetInfoAsync">
+            <summary>
+            Returns the version information for the simulator.
+            </summary>
+            <returns>Simulator details.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Interfaces.ISimulator`2.GetTraceAsync">
+            <summary>
+            Gets the simulator trace.
+            </summary>
+            <returns>Trace entries.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Interfaces.ISimulator`2.GetStateAsync">
+            <summary>
+            Gets the current state of the simulator.
+            </summary>
+            <returns>Status of the simulator.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Interfaces.ISimulator`2.StartAsync(System.Collections.Generic.IEnumerable{`1})">
+            <summary>
+            Starts the simulator.
+            </summary>
+            <returns>Status of the simulator.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Interfaces.ISimulator`2.StopAsync(System.Collections.Generic.IEnumerable{`1})">
+            <summary>
+            Stops the simulator.
+            </summary>
+            <returns>Status of the simulator.</returns>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Logging.EmbeddedLogger">
+            <summary>
+            Concrete Loggable class for classes inheriting from library base classes.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.EmbeddedLogger.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type)">
+            <summary>
+            Main constructor.
+            </summary>
+            <param name="logger">IHtecLogger instance</param>
+            <param name="type">Type instance</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.EmbeddedLogger.GetLogger(System.String)">
+            <inheritdoc cref="T:Htec.Foundation.Core.Loggable"/>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.EmbeddedLogger.FormatMessage(System.String,System.String[])">
+            <inheritdoc cref="T:Htec.Foundation.Core.Loggable"/>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Logging.Log4NetExceptionLogger">
+            <summary>
+            Override default exception handler with Log4Net Error 
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.Log4NetExceptionLogger.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Logging.Log4NetExceptionLogger"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.Log4NetExceptionLogger.Log(System.Web.Http.ExceptionHandling.ExceptionLoggerContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Logging.LoggerTraceWriter">
+            <summary>
+            Writes traces to an <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger"/> instance.
+            </summary>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.LoggerTraceWriter.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Simulators.RestApi.Logging.LoggerTraceWriter"/>.
+            </summary>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.LoggerTraceWriter.IsEnabled(System.String,System.Web.Http.Tracing.TraceLevel)">
+            <summary>
+            Is the trace logger enabled.
+            </summary>
+            <param name="category">Category of trace.</param>
+            <param name="level">Level of the trace.</param>
+            <returns>Logger status.</returns>
+        </member>
+        <member name="M:Htec.Simulators.RestApi.Logging.LoggerTraceWriter.Trace(System.Net.Http.HttpRequestMessage,System.String,System.Web.Http.Tracing.TraceLevel,System.Action{System.Web.Http.Tracing.TraceRecord})">
+            <summary>
+            Logs a trace message to the logger.
+            </summary>
+            <param name="request">Source request.</param>
+            <param name="category">Category of trace.</param>
+            <param name="level">Level of the trace.</param>
+            <param name="traceAction">Action to perform on trace.</param>
+        </member>
+        <member name="T:Htec.Simulators.RestApi.Models.SimulatorVersion">
+            <summary>
+            Version information about the simulator application.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Models.SimulatorVersion.Name">
+            <summary>
+            Name of the simulator.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Models.SimulatorVersion.Version">
+            <summary>
+            Version of the application.
+            </summary>
+        </member>
+        <member name="P:Htec.Simulators.RestApi.Models.SimulatorVersion.DotNetVersion">
+            <summary>
+            Version of .Net runtime.
+            </summary>
+        </member>
+    </members>
+</doc>

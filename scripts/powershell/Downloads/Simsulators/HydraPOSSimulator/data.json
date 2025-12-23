@@ -1,0 +1,30 @@
+[
+  {
+    "pumpCount": 0,
+    "simulatorStatus": {
+      "PumpChannel": "HydraFdc",
+      "SiteControllerConnected": false,
+      "OptChannel": "HydraPos",
+      "HydraConnected": false,
+      "RetalixConnected": false
+    },
+    "optConnection": {
+      "name": "HydraPos",
+      "optChannel": {
+        "name": "HydraPos",
+        "port": 1261,
+        "address": "192.168.137.1",
+        "messageFlowType": 3
+      },
+      "journalChannel": null
+    },
+    "pumpChannel": {
+      "name": "HydraFdc",
+      "port": 1259,
+      "address": "192.168.137.1",
+      "messageFlowType": 3
+    },
+    "id": 1,
+    "posNumber": 1
+  }
+]

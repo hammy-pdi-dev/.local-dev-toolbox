@@ -1,0 +1,1675 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Htec.Common</name>
+    </assembly>
+    <members>
+        <member name="T:Htec.Common.Exceptions.HtecException">
+            <summary>
+            Custom Htec Exception
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Exceptions.HtecException.ExceptionType">
+            <summary>
+            The exception type to provide additional information
+            about the exception
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor">
+            <summary>
+            Default constructor
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.String,Htec.Common.Exceptions.HtecExceptionType)">
+            <summary>
+            Create a new Htec Exception with a message
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="exceptionType"> </param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.String,System.Exception,Htec.Common.Exceptions.HtecExceptionType)">
+            <summary>
+            Create a new Htec Exception with a message and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="inner">The exception that was raised</param>
+            <param name="exceptionType"> </param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Create a new Htec Exception with serialization info and context
+            </summary>
+            <param name="info">Serialization info</param>
+            <param name="context">Streaming context</param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Override of GetObjectData to add custom properties
+            </summary>
+            <param name="info">Serialization info</param>
+            <param name="context">Streaming context</param>
+        </member>
+        <member name="T:Htec.Common.Exceptions.HtecExceptionType">
+            <summary>
+            Htec exception types to be used
+            NOTE: SqlException should only be used by a HtecSqlException
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecPropertyInvalidException.#ctor(System.String,System.String)">
+            <summary>
+            Create a new Htec Property Invalid Exception with a message and property name
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="propertyName">The property name</param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecPropertyInvalidException.#ctor(System.String,System.String,System.Exception)">
+            <summary>
+            Create a new Htec Property Invalid Exception with a message, property name and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="propertyName">The property name</param>
+            <param name="inner">The exception that was raised</param>
+        </member>
+        <member name="T:Htec.Common.Exceptions.HtecSqlException">
+            <summary>
+            Custom Htec SQL Exception
+            NOTE: This should not be inherited from and as such sealed
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecSqlException.#ctor(System.String,System.Exception)">
+            <summary>
+            Create a new Htec SQL Exception with a message and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="inner">The exception that was raised</param>
+        </member>
+        <member name="T:Htec.Common.Extensions.CardExtensions">
+            <summary>
+            string extensions for card values
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetLuhnCheckDigit(System.String)">
+            <summary>
+            Algorithm
+            1. Append a zero check digit to the number and calculate checksum
+            2. If the (sum mod 10) == 0, then the check digit is 0
+            3. Else, the check digit = 10 - (sum mod 10)
+            </summary>
+            <param name="number"></param>
+            <returns>The Check Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsLuhnDigitCorrect(System.String)">
+            <summary>
+            Checks that the Luhn digit is correct on the supplied number.
+            </summary>
+            <param name="number"></param>
+            <returns>true if Check Digit is correct</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.FactorLuhnDigit(System.Int32,System.Int32)">
+            <summary>
+            Starting with the first digit multiply every other by 2.  If result is greater
+            than 9 set it to the sum of the digits or subtract 9
+            Zero based list 0 = 1, 1 = 2 etc.  so to test for even we test for odd.
+            </summary>
+            <param name="digit"></param>
+            <param name="index"></param>
+            <returns>updated digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetEanCheckDigit(System.String)">
+            <summary>
+            Multiplies every other digit by 3
+            2. If the (sum mod 10) == 0, then the check digit is 0
+            3. Else, the check digit = 10 - (sum mod 10)
+            </summary>
+            <param name="number"></param>
+            <returns>The Check Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsEanDigitCorrect(System.String)">
+            <summary>
+            Checks that the Luhn digit is correct on the supplied number.
+            </summary>
+            <param name="number"></param>
+            <returns>>true if Check Digit is correct</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.FactorEanDigit(System.Int32,System.Int32)">
+            <summary>
+            Starting with the first digit multiply every other digit by 3 starting with the first one.
+            Zero based list 0 = 1, 1 = 2 etc.  so to test for even we test for odd.
+            </summary>
+            <param name="digit"></param>
+            <param name="index"></param>
+            <returns>Updated Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.ValidateNumber(System.String)">
+            <summary>
+            Well, it kind of validates that it is a number!
+            </summary>
+            <param name="number"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetCheckDigit(System.Int32)">
+            <summary>
+            Calculates the check digit.
+            </summary>
+            <param name="sum"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsPaybackCard(System.String)">
+            <summary>
+            Is this card number a Payback card
+            </summary>
+            <param name="cardNumber">The card number to check</param>
+            <returns>A boolean denoting if number is payback</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsDeutschlandLoyaltyCard(System.String)">
+            <summary>
+            Is this card a valid Deutschland Card
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsDeutschlandBarcodeCard(System.String)">
+            <summary>
+            Is this card a valid Deutschland barcard
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsUkLoyaltyCard(System.String)">
+            <summary>
+            Is this card a valid Uk loyalty card.
+            </summary>
+            <param name="cardNumber">Supplied card number.</param>
+            <returns>True or false.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsUkBarcodeCard(System.String)">
+            <summary>
+            Is this card a valid Uk barcode.
+            </summary>
+            <param name="cardNumber">Supplied barcode number.</param>
+            <returns>True or false.</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.CharacterExtensions">
+            <summary>
+            character extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.CharacterExtensions.EqualTo(System.Char,System.Char,System.StringComparison)">
+            <summary>
+            Equal To comparison for Character
+            </summary>
+            <param name="value">The character to perform the test on</param>
+            <param name="toCompare">The character to compare to</param>
+            <param name="comparison">(optional)The type of compare to use the default is to ignore case</param>
+            <returns>A boolean denoting if the characters are the same</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.DictionaryExtensions">
+            <summary>
+            Extension methods for a dictionary.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.DictionaryExtensions.ValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
+            <summary>
+            Get the value based on the key if it exists.
+            </summary>
+            <typeparam name="TInput">The key type.</typeparam>
+            <typeparam name="TOutput">The value type.</typeparam>
+            <param name="source">The dictionary used.</param>
+            <param name="key">The key to check for.</param>
+            <param name="defaultValue">The default value to return.</param>
+            <returns>The value of the key exists, otherwise the default value is returned.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.DictionaryExtensions.TryGetValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
+            <summary>
+            Try and Get the value based on the key if it exists.
+            Note: This does one scan of the hash table and is considered faster than using ContainsKey (that does 2 scans), but this depends if the hash table is already indexed
+            </summary>
+            <typeparam name="TInput">The key type.</typeparam>
+            <typeparam name="TOutput">The value type.</typeparam>
+            <param name="source">The dictionary used.</param>
+            <param name="key">The key to check for.</param>
+            <param name="defaultValue">The default value to return.</param>
+            <returns>The value of the key exists, otherwise the default value is returned.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.IsSet``1(``0,``0)">
+            <summary>
+            Checks if the flag has been set
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="totalFlagValue">The total flags value</param>
+            <param name="flagToCheckSet">the flag to check</param>
+            <returns></returns>        
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Set``1(``0,``0)">
+            <summary>
+            Sets a particular flag
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="currentFlagValue">The current flags value</param>
+            <param name="flagToSet">the flag to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Unset``1(``0,``0)">
+            <summary>
+            Un sets a particular flag
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="currentFlagValue">The current flags value</param>
+            <param name="flagToUnset">the flag to unset</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Description``1(``0)">
+            <summary>
+            Extension Allows the use of the Description Attribute to define string names
+            </summary>
+            <typeparam name="T">The enum object type</typeparam>
+            <param name="enumObject">The enum object</param>
+            <returns>The Description Attribute string or an empty string</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.ValueOf``1(``0,System.String,System.Boolean)">
+            <summary>
+            Extension allows the description value to be used to return the enum value
+            </summary>
+            <typeparam name="T">The enum object type</typeparam>
+            <param name="enumObject">The enum object</param>
+            <param name="description">The description to find</param>
+            <param name="ignoreCase">(optional) ignore case in search</param>
+            <returns>The enum object for the description or null</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.InstrumentationExtensions">
+            <summary>
+            Provides access to the standard Instrumentation logger
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Extensions.InstrumentationExtensions.AppDevice">
+            <summary>
+            The device (IpAddress) of the App being Instrumented 
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Extensions.InstrumentationExtensions.AppName">
+            <summary>
+            The Name of the App being Instrumented 
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Extensions.InstrumentationExtensions.AppVersion">
+            <summary>
+            The Version of the App being Instrumented 
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.LoggerMessageFormat">
+            <summary>
+            The standard format of all Instrumentation messages
+            </summary>
+        </member>
+        <member name="T:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit">
+            <summary>
+            Simple enum for the units of time that can be Instrumented when the TimeSpan/Duration overload is used
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit.Milliseconds">
+            <summary>
+            ms
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit.Seconds">
+            <summary>
+            s
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit.Minutes">
+            <summary>
+            m
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit.Hours">
+            <summary>
+            h
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.TimeUnit.Days">
+            <summary>
+            day
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationLoggerConfigName">
+            <summary>
+            The Instrumentation Logger configuration filename
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationLoggerInstanceName">
+            <summary>
+            The Instrumentation instance name 
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationAppenderName">
+            <summary>
+            The Instrumentation Appender name
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationAppDevice">
+            <summary>
+            The device running the App being Instrumented
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationAppName">
+            <summary>
+            The name of App being Instrumented
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Extensions.InstrumentationExtensions.InstrumentationAppVersion">
+            <summary>
+            The version of App being Instrumented
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.SetCoreAppAttributes(System.String,System.String,System.String)">
+            <summary>
+            Initialises the main attributes used by the Instrumentation logger
+            </summary>
+            <param name="device"></param>
+            <param name="name"></param>
+            <param name="version"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.GetLogger">
+            <summary>
+            Retrieves the Instrumentation logger instance
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.GetNow">
+            <summary>
+            Returns the current time as DateTime.UtcNow
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogMetric(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, that uses log4net.GlobalContext.Properties[] to extract core attributes with keys:
+            InstrumentationAppDevice, InstrumentationAppName and InstrumentationAppVersion
+            </summary>
+            <param name="logger"></param>
+            <param name="name"></param>
+            <param name="unit"></param>
+            <param name="value"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogMetric(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.TimeSpan,Htec.Common.Extensions.InstrumentationExtensions.TimeUnit,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically Duration, that uses log4net.GlobalContext.Properties[] to extract core attributes with keys:
+            InstrumentationAppDevice, InstrumentationAppName and InstrumentationAppVersion
+            </summary>
+            <param name="logger"></param>
+            <param name="name"></param>
+            <param name="duration"></param>
+            <param name="unit"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogCancel(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically Cancel, that uses log4net.GlobalContext.Properties[] to extract core attributes with keys:
+            InstrumentationAppDevice, InstrumentationAppName and InstrumentationAppVersion
+            </summary>
+            <param name="logger"></param>
+            <param name="name"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogException(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.Exception,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically an Exception, that uses log4net.GlobalContext.Properties[] to extract core attributes with keys:
+            InstrumentationAppDevice, InstrumentationAppName and InstrumentationAppVersion
+            </summary>
+            <param name="logger"></param>
+            <param name="name"></param>
+            <param name="exception">Exception instance</param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogStatus(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Status, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="name"></param>
+            <param name="unit"></param>
+            <param name="status"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogMetric(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="device"></param>
+            <param name="application"></param>
+            <param name="version"></param>
+            <param name="name"></param>
+            <param name="unit"></param>
+            <param name="value"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogMetric(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.TimeSpan,Htec.Common.Extensions.InstrumentationExtensions.TimeUnit,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically Duration, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="device"></param>
+            <param name="application"></param>
+            <param name="version"></param>
+            <param name="name"></param>
+            <param name="duration"></param>
+            <param name="unit"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogCancel(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically Cancel, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="device"></param>
+            <param name="application"></param>
+            <param name="version"></param>
+            <param name="name"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogException(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.Exception,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Metric, specifically an Exception, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="device"></param>
+            <param name="application"></param>
+            <param name="version"></param>
+            <param name="name"></param>
+            <param name="exception">Exception instance</param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.InstrumentationExtensions.LogStatus(Htec.Common.Logger.Interfaces.IHtecLogger,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Log a Telemetry/Instrumentation Status, in a consistent format
+            </summary>
+            <param name="logger"></param>
+            <param name="device"></param>
+            <param name="application"></param>
+            <param name="version"></param>
+            <param name="name"></param>
+            <param name="unit"></param>
+            <param name="status"></param>
+            <param name="value2"></param>
+            <param name="value3"></param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Htec.Common.Extensions.ListExtensions.Batch``1(System.Collections.Generic.IEnumerable{``0},System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:Htec.Common.Extensions.ListExtensions.Batch``1(System.Linq.IQueryable{``0},System.Int32)" -->
+        <member name="M:Htec.Common.Extensions.ListExtensions.Page``1(System.Collections.Generic.IEnumerable{``0},System.Int32,System.Int32)">
+            <summary>
+            Page elements
+            </summary>
+            <param name="items">Items</param>
+            <param name="itemStart">Start Point</param>
+            <param name="pageLength">Page length</param>
+            <returns>IEnumerable of items</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ListExtensions.Page``1(System.Linq.IQueryable{``0},System.Int32,System.Int32)">
+            <summary>
+            Page elements
+            </summary>
+            <param name="items">Items</param>
+            <param name="itemStart">Start Point</param>
+            <param name="pageLength">Page length</param>
+            <returns>IQueryable of items</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.ToNullable``1(System.String)">
+            <summary>
+            ToNullable converts a string value to a given nullable object
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The string value</param>
+            <returns>The nullable object</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.ConvertToNullableAndCheckIsNullOrDefault``1(System.Object)">
+            <summary>
+            Convert a value to nullable and check if is null or the default value
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The value</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsNullOrDefault(System.Object)">
+            <summary>
+            Checks if the nullable value Is Null or Default
+            </summary>
+            <param name="value">The value to test</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsNullOrDefault``1(System.Nullable{``0})">
+            <summary>
+            Checks if the nullable value Is Null or Default
+            </summary>
+            <typeparam name="T">The Type</typeparam>
+            <param name="value">The value to test</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsValue``1(System.Nullable{``0},``0)">
+            <summary>
+            Check to see if the nullable item is set to a particular value
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The nullable item</param>
+            <param name="valueToCheck">The value to check</param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.SqlDataRecordExtensions">
+            <summary>
+            SQL Data record extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableBoolean(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Boolean})">
+            <summary>
+            Set nullable boolean
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the boolean value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableByte(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Byte})">
+            <summary>
+            Set nullable byte
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the byte value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableChar(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Char})">
+            <summary>
+            Set nullable character
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the character value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableDateTime(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.DateTime})">
+            <summary>
+            Set nullable date time
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the date time value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableString(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.String)">
+            <summary>
+            Set nullable string
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the string value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt16(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int16})">
+            <summary>
+            Set nullable Int16
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int16 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt32(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int32})">
+            <summary>
+            Set nullable Int32
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int32 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt64(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int64})">
+            <summary>
+            Set nullable Int64
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int64 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableDecimal(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Decimal})">
+            <summary>
+            Set nullable Decimal
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the decimal value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableBoolean(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable bool
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableByte(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable byte
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableChar(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable char
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableDateTime(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable date time
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableString(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable string
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt16(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int16
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt32(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int32
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt64(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int64
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableDecimal(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable decimal
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.StringExtensions">
+            <summary>
+            string extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.ValidateLength(System.String,System.Int32)">
+            <summary>
+            Validate the length of a string
+            </summary>
+            <param name="value">The value to validate</param>
+            <param name="maxLength">The maximum length to validate against</param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.Contains(System.String,System.String,System.StringComparison)">
+            <summary>
+            Returns a value indicating whether a specified substring occurs within this string.
+            </summary>
+            <param name="value">The string to check.</param>
+            <param name="toSeek">The string to seek.</param>
+            <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+            <returns>true if the value parameter occurs within this string; otherwise, false.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.TruncateOrPadLeft(System.String,System.Int32,System.Char)">
+            <summary>
+            Truncates or pads to the left the string based on the length. This includes a padding char.
+            </summary>
+            <param name="value">The string to be manipulate.</param>
+            <param name="length">The required length of the string.</param>
+            <param name="paddingChar">The char to be used when padding</param>
+            <returns>Returns a new string that has either been truncated or padded to the left with padding characters.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.TruncateOrPadRight(System.String,System.Int32,System.Char)">
+            <summary>
+            Truncates or pads to the right the string based on the length. This includes a padding char.
+            </summary>
+            <param name="value">The string to be manipulate.</param>
+            <param name="length">The required length of the string.</param>
+            <param name="paddingChar">The char to be used when padding</param>
+            <returns>Returns a new string that has either been truncated or padded to the right with padding characters.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EqualToIgnoreCase(System.String,System.String)">
+            <summary>
+            Equal To ignoring case comparison for String
+            </summary>
+            <param name="value">The character to perform the test on</param>
+            <param name="toCompare">The character to compare to</param>
+            <returns>A boolean denoting if the characters are the same</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EscapeSqlString(System.String)">
+            <summary>
+            Escapes a string so that it is in a format to be written to SQL.
+            </summary>
+            <param name="value">The string to escape.</param>
+            <returns>The escaped string.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.UnescapeSqlString(System.String)">
+            <summary>
+            Unescapes a string that contains escaped characters required for SQL.
+            </summary>
+            <param name="value">The string to unescape.</param>
+            <returns>The unescaped string.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.ReplaceLastOccurrence(System.String,System.String,System.String,System.StringComparison)">
+            <summary>
+            replaces the last occurrence of toReplace with replacement (if toReplace exists)
+            </summary>
+            <param name="source">string to update</param>
+            <param name="toReplace">value to search for and remove</param>
+            <param name="replacement">value to put into string</param>
+            <param name="comparison">(Optional) Comparison for the search </param>
+            <returns>the updated source</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.SubstringOrEmpty(System.String,System.Int32,System.Int32)">
+            <summary>
+            SubstringOrEmpty allows substring to be used without throwing an exception if out of range
+            </summary>
+            <param name="value">The string value to substring</param>
+            <param name="startIndex">The start index</param>
+            <param name="length">(optional)The length to substring</param>
+            <returns>The substring value or empty if out of range</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.SafeTrim(System.String)">
+            <summary>
+            Safe trim allows a trim without throwing an exception if null or empty
+            </summary>
+            <param name="source">The string value to trim</param>
+            <returns>The trimmed value or the original string if null or empty</returns>
+        </member>
+        <member name="F:Htec.Common.Extensions.StringExtensions.UriRfc3986CharsToEscape">
+            <summary>
+            The set of characters that are unreserved in RFC 2396 but are NOT unreserved in RFC 3986.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EscapeUriDataStringRfc3986(System.String)">
+            <summary>
+            Escapes a string according to the URI data string rules given in RFC 3986.
+            </summary>
+            <param name="value">The value to escape.</param>
+            <returns>The escaped value.</returns>
+            <remarks>
+            The <see cref="M:System.Uri.EscapeDataString(System.String)"/> method is <i>supposed</i> to take on
+            RFC 3986 behavior if certain elements are present in a .config file.  Even if this
+            actually worked (which in my experiments it <i>doesn't</i>), we can't rely on every
+            host actually having this configuration element present.
+            </remarks>
+        </member>
+        <member name="T:Htec.Common.File.DirectoryAdaptor">
+            <summary>
+            Directory Adapter to provide a wrapper for Directory IO
+            </summary>
+        </member>
+        <member name="M:Htec.Common.File.DirectoryAdaptor.CreateDirectory(System.String)">
+            <summary>
+            Create a folder at the given path
+            </summary>
+            <param name="path">The path to create</param>
+            <returns>The directory information of the created directory</returns>
+        </member>
+        <member name="M:Htec.Common.File.DirectoryAdaptor.Exists(System.String)">
+            <summary>
+            Check if a directory Exists
+            </summary>
+            <param name="path">The patch to check</param>
+            <returns>A boolean denoting if the directory exists</returns>
+        </member>
+        <member name="M:Htec.Common.File.DirectoryAdaptor.GetFiles(System.String)">
+            <summary>
+            Get files in a given path
+            </summary>
+            <param name="path">The path to get the strings</param>
+            <returns>The array of files</returns>
+        </member>
+        <member name="M:Htec.Common.File.DirectoryAdaptor.GetFiles(System.String,System.String)">
+            <summary>
+            Get files in a given path with a search pattern
+            </summary>
+            <param name="path">The path to get the files</param>
+            <param name="pattern">The pattern to search for</param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.File.FileAdaptor">
+            <summary>
+            File Adaptor to provide a wrapper for File IO
+            </summary>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.Exists(System.String)">
+            <summary>
+            Check if a file exists
+            </summary>
+            <param name="path">The path and filename of the file to check</param>
+            <returns>A boolean denoting if the file exists</returns>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.Move(System.String,System.String)">
+            <summary>
+            Move a file
+            </summary>
+            <param name="sourceFileName">The path and filename of the source file</param>
+            <param name="destFileName">The path and filename of the destination file</param>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.Move(System.String,System.String,System.Boolean)">
+            <summary>
+            Move a file and overwrite if already exists
+            </summary>
+            <param name="sourceFileName">The path and filename of the source file</param>
+            <param name="destFileName">The path and filename of the destination file</param>
+            <param name="overwrite">Overwrite the file if there is one with the same name</param>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.MoveAndTimestamp(System.String,System.String)">
+            <summary>
+            Move a file and add a timestamp to the name
+            </summary>
+            <param name="sourceFileName">The path and filename of the source file</param>
+            <param name="destFileName">The path and filename of the destination file</param>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.ReadLines(System.String)">
+            <summary>
+            Read the lines from a file
+            </summary>
+            <param name="path">The path and filename of the file to read</param>
+            <returns>The list of strings from the file</returns>
+        </member>
+        <member name="M:Htec.Common.File.FileAdaptor.CreateChecksum(System.String)">
+            <summary>
+            Create a checksum for the given file
+            </summary>
+            <param name="path">The path and of the file to create the checksum for</param>
+            <returns>The generated checksum</returns>
+        </member>
+        <member name="T:Htec.Common.File.FileOperation">
+            <summary>
+            This class wraps the file IO operations required by multiple projects
+            </summary>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.CreateDirectory(System.String)">
+            <summary>
+            Attempts to create the specified directory.
+            </summary>
+            <param name="directoryName">The directory to create</param>
+            <exception cref="T:Htec.Common.Exceptions.HtecException"></exception>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.MoveFile(System.String,System.String,System.Boolean)">
+            <summary>
+            Attempts to move a file.
+            </summary>
+            <param name="source">The full path and name of the souce file</param>
+            <param name="destination">The full path and name of the destinationFileNameAndPath file</param>
+            <param name="createDestinationDirectory">Indicates whether the destinationFileNameAndPath directory should be created</param>
+            <exception cref="T:Htec.Common.Exceptions.HtecException"></exception>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.MoveFile(System.String,System.String)">
+            <summary>
+            Attempts to move the specified sourceFileNameAndPath file to the specified destinationFileNameAndPath.
+            If the destinationFileNameAndPath filename is different, the file will be renamed on the move.
+            </summary>
+            <param name="source">The full path to the sourceFileNameAndPath file</param>
+            <param name="destination">The full path to the destinationFileNameAndPath file</param>
+            <exception cref="T:Htec.Common.Exceptions.HtecException"></exception>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.MoveFileWithTimeStamp(System.String,System.String,System.Boolean)">
+            <summary>
+            Move file with time stamp
+            </summary>
+            <param name="sourceFileNameAndPath">The sourceFileNameAndPath to move from</param>
+            <param name="destinationFileNameAndPath">The destinationFileNameAndPath to move to</param>
+            <param name="createDestinationDirectory">A boolean denoting if a directory should be created</param>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.MoveFileWithTimeStamp(System.String,System.String)">
+            <summary>
+            Move file with time stamp
+            </summary>
+            <param name="sourceFileNameAndPath">The sourceFileNameAndPath to move from</param>
+            <param name="destinationFileNameAndPath">The destinationFileNameAndPath to move to</param>
+        </member>
+        <member name="M:Htec.Common.File.FileOperation.ReadCsvContents(System.String,System.Char[])">
+            <summary>
+            Read the contents of a CSV file
+            NOTE: If no delimiter is supplied then comma and space will be used.
+            </summary>
+            <param name="filename">The filename to load</param>
+            <param name="delimiters">(optional) delimiters to split the csv file by</param>
+            <returns>The separated items as an IEnumerable of lines with a list of entries</returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.CardHelpers">
+            <summary>
+            Section of card helper methods for the Deutschland, Payback and UK cards.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetAdditionalDeutschlandCard(System.String)">
+            <summary>
+            Gets either Loyalty or barcode card from the other supplied
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetDeutschlandBarcodeCard(System.String)">
+            <summary>
+            Calculates the related Barcode card from Loyalty card supplied.
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetDeutschlandLoyaltyCard(System.String)">
+            <summary>
+            Calculates the related Loyalty card from Barcode card supplied.
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.CommonHelpers">
+            <summary>
+            Class for common helper methods
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.GetValueFromAnonymousType``1(System.Object,System.String)">
+            <summary>
+            Extract the value from a anonymous object by property name
+            </summary>
+            <typeparam name="T">The type of the value</typeparam>
+            <param name="dataitem">The anonymous object</param>
+            <param name="itemkey">The name of the object property</param>
+            <returns>The requested value</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.IsEmailAddress(System.String)">
+            <summary>
+            Validates an Email Address
+            </summary>
+            <param name="emailAddress">Email address to validate</param>
+            <returns>true if valid</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.IsEmailAddressList(System.String,System.Char)">
+            <summary>
+            Validates that all entries in an email list are correctly formed email address seperated by the seperator character
+            </summary>
+            <param name="list">List of one or more email addresses</param>
+            <param name="seperator">Seperator between email addresses</param>
+            <returns>true if valid</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.EnumHelper.ToEnum``1(System.String)">
+            <summary>
+            Converts the value to an enum
+            </summary>
+            <typeparam name="TEnum">The type of enum.</typeparam>
+            <param name="value">The value to try parse.</param>
+            <returns>The enum value.</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.EnumHelper.ToEnum``1(System.String,``0)">
+            <summary>
+            Converts the value to an enum
+            </summary>
+            <typeparam name="TEnum">The type of enum.</typeparam>
+            <param name="value">The value to try parse.</param>
+            <param name="defaultEnum">the value to return in the event of failure to parse</param>
+            <returns>The enum value.</returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.ObjectCopier">
+            <summary>
+            Reference Article http://www.codeproject.com/KB/tips/SerializedObjectCloner.aspx
+            Provides a method for performing a deep copy of an object.
+            Binary Serialization is used to perform the copy.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.ObjectCopier.Clone``1(``0)">
+            <summary>
+            Perform a deep Copy of the object.
+            </summary>
+            <typeparam name="T">The type of object being copied.</typeparam>
+            <param name="source">The object instance to copy.</param>
+            <returns>The copied object.</returns>
+        </member>
+        <member name="T:Htec.Common.Logger.Appenders.SmtpHtmlAppender">
+            <summary>
+            Custom log4net appender to support HTML emails.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Logger.Appenders.SmtpHtmlAppender.IsBodyHtml">
+            <summary>
+            Gets or sets whether to send the email in HTML format.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Appenders.SmtpHtmlAppender.SendEmail(System.String)">
+            <summary>
+            Sends an HTML email.
+            </summary>
+            <param name="messageBody">The message to send in HTML format.</param>
+        </member>
+        <member name="T:Htec.Common.Logger.Appenders.UpdatedSentryAppender">
+            <summary>
+            A re-worked version of the current SentryAppender.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Appenders.UpdatedSentryAppender.Append(log4net.Core.LoggingEvent)">
+            <summary>
+            The append method.
+            </summary>
+            <param name="loggingEvent"> The log event. </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Appenders.UpdatedSentryAppender.Translate(log4net.Core.Level)">
+            <summary>
+            Some translate thing.
+            </summary>
+            <param name="level"> The level being translated. </param>
+            <returns>
+            The correct enum for the level.
+            </returns>
+        </member>
+        <member name="M:Htec.Common.Logger.Appenders.UpdatedSentryAppender.Append(log4net.Core.LoggingEvent[])">
+            <summary>
+            The protected append method.
+            </summary>
+            <param name="loggingEvents"> The log events. </param>
+        </member>
+        <member name="T:Htec.Common.Logger.Extensions.HtecLoggingConstants">
+            <summary>
+            A class providing common logging constants.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.EntryMessage">
+            <summary>
+            The entry message.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.ExitMessage">
+            <summary>
+            The exit message.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.NamespacePropertyName">
+            <summary>
+            The namespace property name.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.ClassNamePropertyName">
+            <summary>
+            The class name property name.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.MethodNamePropertyName">
+            <summary>
+            The method name property name.
+            </summary>
+        </member>
+        <member name="T:Htec.Common.Logger.Extensions.HtecLoggerExtensions">
+            <summary>
+            A class providing useful extension methods for log4net objects.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Debug(Htec.Common.Logger.Interfaces.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a debug <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Common.Logger.Interfaces.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Info(Htec.Common.Logger.Interfaces.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a business <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Common.Logger.Interfaces.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Warn(Htec.Common.Logger.Interfaces.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a warning <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Common.Logger.Interfaces.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Error(Htec.Common.Logger.Interfaces.IHtecLogger,System.Type,System.String,System.Exception,System.String)">
+            <summary>
+            Logs a error <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Common.Logger.Interfaces.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="exception">The exception to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.SetLoggerProperties(Htec.Common.Logger.Interfaces.IHtecLogger,System.Type,System.String)">
+            <summary>
+            Sets the <c>logger</c> properties for the <c>logger</c> call.
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Common.Logger.Interfaces.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="memberName">A string representing the method name where the extension method was called.</param>
+        </member>
+        <member name="T:Htec.Common.Logger.HtecLogger">
+            <summary>
+            This class acts as an abstraction between log4net logging services and all other HTEC implementations.
+            This implementation will hide the log4net ILog interface from other classes and will provide an IHtecLogger interface instead. 
+            Calls to IHtecLogger will be forwarded to the relevant method on Log4Net ILog. 
+            The only exception to that is the IHtecLogger.Business method which is intended to log messages that customers read.
+            
+            Creating an instance through the GetLogger method will produce a Logger class with its own named ILog interface. 
+            This is intended for the external logging users. i.e.: Partner dlls
+            
+            The GetLogger instance creation method is thread safe, but the logging methods are not guaranteed to be thread safe. 
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.HtecLogger.CreateSync">
+            <summary>
+            Thread synchronisation object for the static GetLogger method.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.HtecLogger._log">
+            <summary>
+            Instantiated for every GetLogger call. Intended to store the log4net.ILog interface to serve logging requests.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.#ctor(System.String,System.String,log4net.Repository.ILoggerRepository,System.Boolean)">
+            <summary>
+            Private constructor for to create and configure a log4net.ILog interface using a specific Logger Repository.
+            </summary>
+            <param name="loggerName">Name used to create the ILog interface</param>
+            <param name="configPath">Path to the log4net configuration file</param>
+            <param name="repository">log4net Repository associated with the current logger</param>
+            <param name="watchConfigFile"></param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.#ctor(System.String,log4net.Repository.ILoggerRepository,System.Boolean)">
+            <summary>
+            Private constructor for to create and configure a log4net.ILog interface using a specific Logger
+            </summary>
+            <param name="loggerName">Name used to create the ILog interface</param>
+            <param name="repository">log4net Repository associated with the current logger</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.#ctor(System.Type)">
+            <summary>
+            private constructor to create log4net.Ilog interface using the type
+            </summary>
+            <param name="type">Type the type to create the logger for</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.GetLogger(System.String,System.Boolean)">
+            <summary>
+            Static method to allow HtecLogger to use the local app.config
+            </summary>
+            <param name="loggerName">The name used to create the interface</param>
+            <param name="useXmlConfigurator">Specify if the logger should use the xml configurator.</param>
+            <returns>A valid logger</returns>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.GetLogger(System.String,System.String,System.Boolean)">
+            <summary>
+            Static method to be used for HtecLogger instance creation.
+            </summary>
+            <param name="loggerName">Name used to create the ILog interface</param>
+            <param name="configPath">Path to the log4net configuration file</param>
+            <param name="watchConfigFile">Indicates if the log4net file should be watched for any changes.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.GetLogger(System.Type)">
+            <summary>
+            Get Logger using the type
+            </summary>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.ValidateConfigPath(System.String)">
+            <summary>
+            Helper method to validate partner specific log4net configuration file paths.
+            </summary>
+            <param name="log4NetConfigPath">log4net configuration file paths</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when the path is null or empty</exception>
+            <exception cref="T:System.ApplicationException">Thrown when a file does not exist at the specified location</exception>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.GetRepository(System.String)">
+            <summary>
+            Creates a named log4net repository to support configuration per named Hteclogger instance.
+            </summary>
+            <param name="repositoryName">Name of the log4net repository</param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Log(System.Type,log4net.Core.Level,System.Object,System.Exception)">
+            <summary>
+            Generic log method.
+            </summary>
+            <param name="type">The declaring type of the method that is the stack boundary into the logging system for this call.</param>
+            <param name="level">The level of the message to be logged.</param>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Debug(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Debug level.
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message to write</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Debug(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Debug level.
+            </summary>
+            <param name="format">A String containing zero or more format items</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.DebugFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Debug level.
+            </summary>
+            <param name="format">A String containing zero or more format items</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Debug(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Debug level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message to write</param>
+            <param name="exception">The associated exception</param>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.IsDebugEnabled">
+            <summary>
+            Checks if this logger is enabled for the log4net.Core.Level.Debug level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Warn(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Warn(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.WarnFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Warn(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.IsWarnEnabled">
+            <summary>
+            Checks if this logger is enabled for the log4net.Core.Level.Warn level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Error(System.String)">
+            <summary>
+            Logs a message object with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Error(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.ErrorFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Error(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Error level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.IsErrorEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Error level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Fatal(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Fatal(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.FatalFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Fatal(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Fatal level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.IsFatalEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Fatal level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Business(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="format"> A String containing zero or more format items</param>
+            <param name="args"> An Object to format</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Business(System.String,System.Exception)">
+            <summary>
+            Logs a message object with the INFO level including the stack trace of the System.Exception
+            passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Info(System.String)">
+            <summary>
+            Logs a message object with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.InfoFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.Info(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.IsInfoEnabled">
+            <summary>
+            Checks if this logger is enabled for the log4net.Core.Level.Info level.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Logger.HtecLogger.Logger">
+            <summary>
+            Exposes the underlying logger.
+            </summary>
+            <returns>The underlying logger.</returns>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.SetLog4NetProperty(System.String,System.Object)">
+            <summary>
+            Sets a Log4Net property
+            </summary>
+            <param name="propertyName">The property name.</param>
+            <param name="value">The value of the property.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.HtecLogger.GetLog4NetProperty(System.String)">
+            <summary>
+            Gets a Log4Net property.
+            </summary>
+            <param name="propertyName">The name of the property.</param>
+            <returns>The value of the property.</returns>
+        </member>
+        <member name="T:Htec.Common.Logger.Interfaces.IHtecLogger">
+            <summary>
+            This Interface will be used as an abstraction between Log4Net logging services and all other classes in the DataExhangeFramework solution.
+            This way we can hide the logging related implementation from other classes so they don't depend directly on Log4Net defined types. 
+            Calls to IHtecLogger will be forwarded to the relevant method on Log4Net ILog. 
+            The only exception is the ILog.Info which is going to be used for our "Business" logging purposes.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Log(System.Type,log4net.Core.Level,System.Object,System.Exception)">
+            <summary>
+            Generic log method.
+            </summary>
+            <param name="type">The declaring type of the method that is the stack boundary into the logging system for this call.</param>
+            <param name="level">The level of the message to be logged.</param>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Debug(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Debug level.
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message to write</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Debug(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Debug level.
+            </summary>
+            <param name="format">A String containing zero or more format items</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.DebugFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Debug level.
+            </summary>
+            <param name="format">A String containing zero or more format items</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Debug(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Debug level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message to write</param>
+            <param name="exception">The associated exception</param>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.IsDebugEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Debug level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Warn(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Warn(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.WarnFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Warn level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Warn(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.IsWarnEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Warn level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Error(System.String)">
+            <summary>
+            Logs a message object with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Error(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.ErrorFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Error level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Error(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Error level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.IsErrorEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Error level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Fatal(System.String)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Fatal(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.FatalFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Fatal level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Fatal(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Fatal level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.IsFatalEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Fatal level.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Business(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="format"> A String containing zero or more format items</param>
+            <param name="args"> An Object to format</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Business(System.String,System.Exception)">
+            <summary>
+            Logs a message object with the INFO level including the stack trace of the System.Exception
+            passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Info(System.String)">
+            <summary>
+            Logs a message object with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="message">The message object to log.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.InfoFormat(System.String,System.Object[])">
+            <summary>
+            Logs a formatted message string with the log4net.Core.Level.Info level.
+            </summary>
+            <param name="format">A String containing zero or more format items.</param>
+            <param name="args">An Object array containing zero or more objects to format.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.Info(System.String,System.Exception)">
+            <summary>
+            Log a message object with the log4net.Core.Level.Warn level including the stack
+            trace of the System.Exception passed as a parameter.
+            </summary>
+            <param name="message">The message object to log.</param>
+            <param name="exception">The exception to log, including its stack trace.</param>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.IsInfoEnabled">
+            <summary>
+             Checks if this logger is enabled for the log4net.Core.Level.Info level.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Logger.Interfaces.IHtecLogger.Logger">
+            <summary>
+            Exposes the underlying logger.
+            </summary>
+            <returns>The underlying logger.</returns>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.SetLog4NetProperty(System.String,System.Object)">
+            <summary>
+            Sets a Log4Net property
+            </summary>
+            <param name="propertyName">The property name.</param>
+            <param name="value">The value of the property.</param>
+        </member>
+        <member name="M:Htec.Common.Logger.Interfaces.IHtecLogger.GetLog4NetProperty(System.String)">
+            <summary>
+            Gets a Log4Net property.
+            </summary>
+            <param name="propertyName">The name of the property.</param>
+            <returns>The value of the property.</returns>
+        </member>
+    </members>
+</doc>

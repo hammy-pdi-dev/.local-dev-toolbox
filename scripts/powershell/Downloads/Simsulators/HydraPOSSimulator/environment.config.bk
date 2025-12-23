@@ -1,0 +1,37 @@
+﻿<appSettings>
+
+  <add key="PosNumber" value="1" />
+
+  <!-- hydra port used with "Hydra:IpAddress" -->
+  <add key="Hydra:Port" value="1261" />
+
+  <!-- network & pump address used with "Hydra:Port" & "Pump:UseLocalHsc" -->
+  <add key="Hydra:IpAddress" value="10.142.70.105" />
+
+  <!-- Pumps connection port used with "Hydra:IpAddress" & "Pump:UseLocalHsc"  -->
+  <add key="Pumps:Port" value="1259" />
+
+  <add key="Pumps:IpAddress" value="10.142.70.105" />
+
+	<!-- Pumps Ip address override to link to local pump sim on 127.0.0.1 - used with "Pump:Port" - overrides "Hydra:IpAddress" for pumps connection-->
+  <add key="Pumps:UseLocalHsc" value="false" />
+
+  <!-- Retalix connection Port - used with "Retalix:IpAddress"-->
+  <add key="Retalix:Port" value="10029" />
+
+  <!-- Retalix connection Ip Address - used with "Retalix:Port"-->
+  <add key="Retalix:IpAddress" value="10.142.70.105" />
+
+  <!-- Api Server Port -->
+  <add key="Api:Port" value="15752" />
+
+  <!-- Api Server - Http tracing -->
+  <add key="Api:Http:AllowTracing" value="false" />
+
+  <!--Api trace Size management - max number of lines-->
+  <add key="Trace:LineLimit" value="1000" />
+
+  <!--Api trace Size management - how many lines to remove from start of trace once "Api:Trace:LineLimit" reached-->
+  <!--<add key="Api:Trace:LineRemovalCount" value="100" />-->
+
+</appSettings>

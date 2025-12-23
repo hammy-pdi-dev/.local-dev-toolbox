@@ -1,0 +1,1313 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Htec.Common</name>
+    </assembly>
+    <members>
+        <member name="T:Htec.Common.Encryption.StringCipher">
+            <summary>
+            String Ciper class is used to provide Encryption and Decryption of plain text.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Encryption.StringCipher.Encrypt(System.String)">
+            <summary>
+            This function is used to Encryot a given plain text 
+            </summary>
+            <param name="plainText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Encryption.StringCipher.Decrypt(System.String)">
+            <summary>
+            This function is used to decrypt a given encrypted text 
+            </summary>
+            <param name="cipherText"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Exceptions.HtecException">
+            <summary>
+            Custom Htec Exception
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Exceptions.HtecException.ExceptionType">
+            <summary>
+            The exception type to provide additional information
+            about the exception
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor">
+            <summary>
+            Default constructor
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.String,Htec.Common.Exceptions.HtecExceptionType)">
+            <summary>
+            Create a new Htec Exception with a message
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="exceptionType"> </param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.String,System.Exception,Htec.Common.Exceptions.HtecExceptionType)">
+            <summary>
+            Create a new Htec Exception with a message and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="inner">The exception that was raised</param>
+            <param name="exceptionType"> </param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Create a new Htec Exception with serialization info and context
+            </summary>
+            <param name="info">Serialization info</param>
+            <param name="context">Streaming context</param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Override of GetObjectData to add custom properties
+            </summary>
+            <param name="info">Serialization info</param>
+            <param name="context">Streaming context</param>
+        </member>
+        <member name="T:Htec.Common.Exceptions.HtecExceptionType">
+            <summary>
+            Htec exception types to be used
+            NOTE: SqlException should only be used by a HtecSqlException
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecPropertyInvalidException.#ctor(System.String,System.String)">
+            <summary>
+            Create a new Htec Property Invalid Exception with a message and property name
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="propertyName">The property name</param>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecPropertyInvalidException.#ctor(System.String,System.String,System.Exception)">
+            <summary>
+            Create a new Htec Property Invalid Exception with a message, property name and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="propertyName">The property name</param>
+            <param name="inner">The exception that was raised</param>
+        </member>
+        <member name="T:Htec.Common.Exceptions.HtecSqlException">
+            <summary>
+            Custom Htec SQL Exception
+            NOTE: This should not be inherited from and as such sealed
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Exceptions.HtecSqlException.#ctor(System.String,System.Exception)">
+            <summary>
+            Create a new Htec SQL Exception with a message and inner exception
+            </summary>
+            <param name="message">The message for the exception</param>
+            <param name="inner">The exception that was raised</param>
+        </member>
+        <member name="T:Htec.Common.Extensions.CardExtensions">
+            <summary>
+            string extensions for card values
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetLuhnCheckDigit(System.String)">
+            <summary>
+            Algorithm
+            1. Append a zero check digit to the number and calculate checksum
+            2. If the (sum mod 10) == 0, then the check digit is 0
+            3. Else, the check digit = 10 - (sum mod 10)
+            </summary>
+            <param name="number"></param>
+            <returns>The Check Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsLuhnDigitCorrect(System.String)">
+            <summary>
+            Checks that the Luhn digit is correct on the supplied number.
+            </summary>
+            <param name="number"></param>
+            <returns>true if Check Digit is correct</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.FactorLuhnDigit(System.Int32,System.Int32)">
+            <summary>
+            Starting with the first digit multiply every other by 2.  If result is greater
+            than 9 set it to the sum of the digits or subtract 9
+            Zero based list 0 = 1, 1 = 2 etc.  so to test for even we test for odd.
+            </summary>
+            <param name="digit"></param>
+            <param name="index"></param>
+            <returns>updated digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetEanCheckDigit(System.String)">
+            <summary>
+            Multiplies every other digit by 3
+            2. If the (sum mod 10) == 0, then the check digit is 0
+            3. Else, the check digit = 10 - (sum mod 10)
+            </summary>
+            <param name="number"></param>
+            <returns>The Check Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsEanDigitCorrect(System.String)">
+            <summary>
+            Checks that the Luhn digit is correct on the supplied number.
+            </summary>
+            <param name="number"></param>
+            <returns>>true if Check Digit is correct</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.FactorEanDigit(System.Int32,System.Int32)">
+            <summary>
+            Starting with the first digit multiply every other digit by 3 starting with the first one.
+            Zero based list 0 = 1, 1 = 2 etc.  so to test for even we test for odd.
+            </summary>
+            <param name="digit"></param>
+            <param name="index"></param>
+            <returns>Updated Digit</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.ValidateNumber(System.String)">
+            <summary>
+            Well, it kind of validates that it is a number!
+            </summary>
+            <param name="number"></param>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.GetCheckDigit(System.Int32)">
+            <summary>
+            Calculates the check digit.
+            </summary>
+            <param name="sum"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsPaybackCard(System.String)">
+            <summary>
+            Is this card number a Payback card
+            </summary>
+            <param name="cardNumber">The card number to check</param>
+            <returns>A boolean denoting if number is payback</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsDeutschlandLoyaltyCard(System.String)">
+            <summary>
+            Is this card a valid Deutschland Card
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsDeutschlandBarcodeCard(System.String)">
+            <summary>
+            Is this card a valid Deutschland barcard
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsUkLoyaltyCard(System.String)">
+            <summary>
+            Is this card a valid Uk loyalty card.
+            </summary>
+            <param name="cardNumber">Supplied card number.</param>
+            <returns>True or false.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.CardExtensions.IsUkBarcodeCard(System.String)">
+            <summary>
+            Is this card a valid Uk barcode.
+            </summary>
+            <param name="cardNumber">Supplied barcode number.</param>
+            <returns>True or false.</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.CharacterExtensions">
+            <summary>
+            character extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.CharacterExtensions.EqualTo(System.Char,System.Char,System.StringComparison)">
+            <summary>
+            Equal To comparison for Character
+            </summary>
+            <param name="value">The character to perform the test on</param>
+            <param name="toCompare">The character to compare to</param>
+            <param name="comparison">(optional)The type of compare to use the default is to ignore case</param>
+            <returns>A boolean denoting if the characters are the same</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.DictionaryExtensions">
+            <summary>
+            Extension methods for a dictionary.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.DictionaryExtensions.ValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
+            <summary>
+            Get the value based on the key if it exists.
+            </summary>
+            <typeparam name="TInput">The key type.</typeparam>
+            <typeparam name="TOutput">The value type.</typeparam>
+            <param name="source">The dictionary used.</param>
+            <param name="key">The key to check for.</param>
+            <param name="defaultValue">The default value to return.</param>
+            <returns>The value of the key exists, otherwise the default value is returned.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.DictionaryExtensions.TryGetValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
+            <summary>
+            Try and Get the value based on the key if it exists.
+            Note: This does one scan of the hash table and is considered faster than using ContainsKey (that does 2 scans), but this depends if the hash table is already indexed
+            </summary>
+            <typeparam name="TInput">The key type.</typeparam>
+            <typeparam name="TOutput">The value type.</typeparam>
+            <param name="source">The dictionary used.</param>
+            <param name="key">The key to check for.</param>
+            <param name="defaultValue">The default value to return.</param>
+            <returns>The value of the key exists, otherwise the default value is returned.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.IsSet``1(``0,``0)">
+            <summary>
+            Checks if the flag has been set
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="totalFlagValue">The total flags value</param>
+            <param name="flagToCheckSet">the flag to check</param>
+            <returns></returns>        
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Set``1(``0,``0)">
+            <summary>
+            Sets a particular flag
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="currentFlagValue">The current flags value</param>
+            <param name="flagToSet">the flag to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Unset``1(``0,``0)">
+            <summary>
+            Un sets a particular flag
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="currentFlagValue">The current flags value</param>
+            <param name="flagToUnset">the flag to unset</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.Description``1(``0)">
+            <summary>
+            Extension Allows the use of the Description Attribute to define string names
+            </summary>
+            <typeparam name="T">The enum object type</typeparam>
+            <param name="enumObject">The enum object</param>
+            <returns>The Description Attribute string or an empty string</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.EnumerationExtensions.ValueOf``1(``0,System.String,System.Boolean)">
+            <summary>
+            Extension allows the description value to be used to return the enum value
+            </summary>
+            <typeparam name="T">The enum object type</typeparam>
+            <param name="enumObject">The enum object</param>
+            <param name="description">The description to find</param>
+            <param name="ignoreCase">(optional) ignore case in search</param>
+            <returns>The enum object for the description or null</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.ExplicitCastExtensions">
+            <summary>
+            Helper class for explict casts, in particular with generic types
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.ExplicitCastExtensions.CheckCastTo``1(System.Object)">
+            <summary>
+            Checks to see if there is an Explicit cast from the given object instance to the specified type, and if
+            there it makes the cast, otherwise returns default
+            </summary>
+            <typeparam name="T">Target type</typeparam>
+            <param name="obj">Object instance</param>
+            <returns>The casted object instance, if applicable, or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ExplicitCastExtensions.CanCastTo``1(System.Object)">
+            <summary>
+            Determines if the given object can be converted (using explicit cast operator), or cast to the specified type (using Reflection)
+            </summary>
+            <typeparam name="T">Target type</typeparam>
+            <param name="obj">Object instance</param>
+            <returns>true, if the cast can be made, otherwise false</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ExplicitCastExtensions.CanCastTo``1(System.Type)">
+            <summary>
+            Determines if the given type can be converted (using explicit cast operator), or cast to the specified type (using Reflection)
+            </summary>
+            <typeparam name="T">Target type</typeparam>
+            <param name="objType">Object type instance</param>
+            <returns>true, if the cast can be made, otherwise false</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ExplicitCastExtensions.CanCastTo(System.Type,System.Type)">
+            <summary>
+            Determines if the given type can be converted (using explicit cast operator), or cast to the specified type (using Reflection)
+            </summary>
+            <param name="objType">Object type instance</param>
+            <param name="typeTo">Target type</param>
+            <returns>true, if the cast can be made, otherwise false</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ExplicitCastExtensions.CastTo``1(System.Object)">
+            <summary>
+            Converts the given object instance to the specifed type, using Refelction to make the explicit cast
+            </summary>
+            <typeparam name="T">Target type</typeparam>
+            <param name="obj">Object instance</param>
+            <returns>The casted object instance, if applicable, or default</returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Htec.Common.Extensions.ListExtensions.Batch``1(System.Collections.Generic.IEnumerable{``0},System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:Htec.Common.Extensions.ListExtensions.Batch``1(System.Linq.IQueryable{``0},System.Int32)" -->
+        <member name="M:Htec.Common.Extensions.ListExtensions.Page``1(System.Collections.Generic.IEnumerable{``0},System.Int32,System.Int32)">
+            <summary>
+            Page elements
+            </summary>
+            <param name="items">Items</param>
+            <param name="itemStart">Start Point</param>
+            <param name="pageLength">Page length</param>
+            <returns>IEnumerable of items</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.ListExtensions.Page``1(System.Linq.IQueryable{``0},System.Int32,System.Int32)">
+            <summary>
+            Page elements
+            </summary>
+            <param name="items">Items</param>
+            <param name="itemStart">Start Point</param>
+            <param name="pageLength">Page length</param>
+            <returns>IQueryable of items</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.LoggerExtensions">
+            <summary>
+            Extensions to assist with logging detail...
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.LoggerExtensions.LogMessage(System.Object,System.String,System.String,System.String[])">
+            <summary>
+            Provides a consistent format to Logging messages
+            </summary>
+            <param name="instance">Any object instance</param>
+            <param name="method">MethodName being logged</param>
+            <param name="header">Header being logged</param>
+            <param name="messages">Any additional messages</param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.LoggerExtensions.GetFullErrorMessage(System.Exception)">
+            <summary>
+            Provides the full message, including all InnerException.Message if available
+            </summary>
+            <param name="ex">Exception instance</param>
+            <returns>string</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.LoggerExtensions.ToShortDateTimeString(System.DateTime)">
+            <summary>
+            Formats the DateTime instance to "ShortDate ShortTime" format
+            </summary>
+            <param name="dtm"></param>
+            <returns>string</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.NameValueCollectionExtensions">
+            <summary>
+            Helper class for NameValueCollection
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.NameValueCollectionExtensions.GetAppSettingOrDefault(System.Collections.Specialized.NameValueCollection,System.String,System.String,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Returns the AppSetting[key] value, if present or defaultValue (String)
+            </summary>
+            <param name="appSettings">NameValueCollection instance</param>
+            <param name="key">key to check</param>
+            <param name="defaultValue">Value to use if the key is not present</param>
+            <param name="logger"><see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger"/> instance used to log when the default value is used</param>
+            <returns>String value if present, otherwise default value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NameValueCollectionExtensions.GetAppSettingOrDefault(System.Collections.Specialized.NameValueCollection,System.String,System.Int32,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Returns the AppSetting[key] value, if present or defaultValue (Int32)
+            </summary>
+            <param name="appSettings">NameValueCollection instance</param>
+            <param name="key">key to check</param>
+            <param name="defaultValue">Value to use if the key is not present</param>
+            <param name="logger"><see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger"/> instance used to log when the default value is used</param>
+            <returns>Int32 value if present, otherwise default value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NameValueCollectionExtensions.GetAppSettingOrDefault(System.Collections.Specialized.NameValueCollection,System.String,System.UInt32,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Returns the AppSetting[key] value, if present or defaultValue (uint)
+            </summary>
+            <param name="appSettings">NameValueCollection instance</param>
+            <param name="key">key to check</param>
+            <param name="defaultValue">Value to use if the key is not present</param>
+            <param name="logger"><see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger"/> instance used to log when the default value is used</param>
+            <returns>uint value if present, otherwise default value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NameValueCollectionExtensions.GetAppSettingOrDefault(System.Collections.Specialized.NameValueCollection,System.String,System.Boolean,Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Returns the AppSetting[key] value, if present or defaultValue (bool)
+            </summary>
+            <param name="appSettings">NameValueCollection instance</param>
+            <param name="key">key to check</param>
+            <param name="defaultValue">Value to use if the key is not present</param>
+            <param name="logger"><see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger"/> instance used to log when the default value is used</param>
+            <returns>bool value if present, otherwise default value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.ToNullable``1(System.String)">
+            <summary>
+            ToNullable converts a string value to a given nullable object
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The string value</param>
+            <returns>The nullable object</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.ConvertToNullableAndCheckIsNullOrDefault``1(System.Object)">
+            <summary>
+            Convert a value to nullable and check if is null or the default value
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The value</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsNullOrDefault(System.Object)">
+            <summary>
+            Checks if the nullable value Is Null or Default
+            </summary>
+            <param name="value">The value to test</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsNullOrDefault``1(System.Nullable{``0})">
+            <summary>
+            Checks if the nullable value Is Null or Default
+            </summary>
+            <typeparam name="T">The Type</typeparam>
+            <param name="value">The value to test</param>
+            <returns>A boolean denoting if null or default</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.NullableExtensions.IsValue``1(System.Nullable{``0},``0)">
+            <summary>
+            Check to see if the nullable item is set to a particular value
+            </summary>
+            <typeparam name="T">The type</typeparam>
+            <param name="value">The nullable item</param>
+            <param name="valueToCheck">The value to check</param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.SqlDataRecordExtensions">
+            <summary>
+            SQL Data record extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableBoolean(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Boolean})">
+            <summary>
+            Set nullable boolean
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the boolean value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableByte(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Byte})">
+            <summary>
+            Set nullable byte
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the byte value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableChar(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Char})">
+            <summary>
+            Set nullable character
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the character value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableDateTime(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.DateTime})">
+            <summary>
+            Set nullable date time
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the date time value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableString(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.String)">
+            <summary>
+            Set nullable string
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the string value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt16(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int16})">
+            <summary>
+            Set nullable Int16
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int16 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt32(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int32})">
+            <summary>
+            Set nullable Int32
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int32 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableInt64(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Int64})">
+            <summary>
+            Set nullable Int64
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the Int64 value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.SetNullableDecimal(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32,System.Nullable{System.Decimal})">
+            <summary>
+            Set nullable Decimal
+            </summary>
+            <param name="sqlDataRecord">The data record to set value on</param>
+            <param name="index">The ordinal value</param>
+            <param name="value">the decimal value to set</param>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableBoolean(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable bool
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableByte(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable byte
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableChar(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable char
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableDateTime(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable date time
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableString(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable string
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt16(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int16
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt32(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int32
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableInt64(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable Int64
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.SqlDataRecordExtensions.GetNullableDecimal(Microsoft.SqlServer.Server.SqlDataRecord,System.Int32)">
+            <summary>
+            Get nullable decimal
+            </summary>
+            <param name="sqlDataRecord">The data record to get the value from</param>
+            <param name="index">The ordinal value</param>
+            <returns>The requested nullable value</returns>
+        </member>
+        <member name="T:Htec.Common.Extensions.StringExtensions">
+            <summary>
+            string extensions
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.ValidateLength(System.String,System.Int32)">
+            <summary>
+            Validate the length of a string
+            </summary>
+            <param name="value">The value to validate</param>
+            <param name="maxLength">The maximum length to validate against</param>
+            <returns>true if length of value is valid</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.Contains(System.String,System.String,System.StringComparison)">
+            <summary>
+            Returns a value indicating whether a specified substring occurs within this string.
+            </summary>
+            <param name="value">The string to check.</param>
+            <param name="toSeek">The string to seek.</param>
+            <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+            <returns>true if the value parameter occurs within this string; otherwise, false.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.TruncateOrPadLeft(System.String,System.Int32,System.Char)">
+            <summary>
+            Truncates or pads to the left the string based on the length. This includes a padding char.
+            </summary>
+            <param name="value">The string to be manipulate.</param>
+            <param name="length">The required length of the string.</param>
+            <param name="paddingChar">The char to be used when padding</param>
+            <returns>Returns a new string that has either been truncated or padded to the left with padding characters.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.TruncateOrPadRight(System.String,System.Int32,System.Char)">
+            <summary>
+            Truncates or pads to the right the string based on the length. This includes a padding char.
+            </summary>
+            <param name="value">The string to be manipulate.</param>
+            <param name="length">The required length of the string.</param>
+            <param name="paddingChar">The char to be used when padding</param>
+            <returns>Returns a new string that has either been truncated or padded to the right with padding characters.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EqualToIgnoreCase(System.String,System.String)">
+            <summary>
+            Equal To ignoring case comparison for String
+            </summary>
+            <param name="value">The character to perform the test on</param>
+            <param name="toCompare">The character to compare to</param>
+            <returns>A boolean denoting if the characters are the same</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EscapeSqlString(System.String)">
+            <summary>
+            Escapes a string so that it is in a format to be written to SQL.
+            </summary>
+            <param name="value">The string to escape.</param>
+            <returns>The escaped string.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.UnescapeSqlString(System.String)">
+            <summary>
+            Unescapes a string that contains escaped characters required for SQL.
+            </summary>
+            <param name="value">The string to unescape.</param>
+            <returns>The unescaped string.</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.ReplaceLastOccurrence(System.String,System.String,System.String,System.StringComparison)">
+            <summary>
+            replaces the last occurrence of toReplace with replacement (if toReplace exists)
+            </summary>
+            <param name="source">string to update</param>
+            <param name="toReplace">value to search for and remove</param>
+            <param name="replacement">value to put into string</param>
+            <param name="comparison">(Optional) Comparison for the search </param>
+            <returns>the updated source</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.SubstringOrEmpty(System.String,System.Int32,System.Int32)">
+            <summary>
+            SubstringOrEmpty allows substring to be used without throwing an exception if out of range
+            </summary>
+            <param name="value">The string value to substring</param>
+            <param name="startIndex">The start index</param>
+            <param name="length">(optional)The length to substring</param>
+            <returns>The substring value or empty if out of range</returns>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.SafeTrim(System.String)">
+            <summary>
+            Safe trim allows a trim without throwing an exception if null or empty
+            </summary>
+            <param name="source">The string value to trim</param>
+            <returns>The trimmed value or the original string if null or empty</returns>
+        </member>
+        <member name="F:Htec.Common.Extensions.StringExtensions.UriRfc3986CharsToEscape">
+            <summary>
+            The set of characters that are unreserved in RFC 2396 but are NOT unreserved in RFC 3986.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.EscapeUriDataStringRfc3986(System.String)">
+            <summary>
+            Escapes a string according to the URI data string rules given in RFC 3986.
+            </summary>
+            <param name="value">The value to escape.</param>
+            <returns>The escaped value.</returns>
+            <remarks>
+            The <see cref="M:System.Uri.EscapeDataString(System.String)"/> method is <i>supposed</i> to take on
+            RFC 3986 behavior if certain elements are present in a .config file.  Even if this
+            actually worked (which in my experiments it <i>doesn't</i>), we can't rely on every
+            host actually having this configuration element present.
+            </remarks>
+        </member>
+        <member name="M:Htec.Common.Extensions.StringExtensions.IsNullOrWhiteSpace(System.String)">
+            <summary>
+            Simple wrapper for IsNullOrWhiteSpace that deals with the differing .Net Framework implementations
+            </summary>
+            <param name="value"></param>
+            <returns>bool</returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.CardHelpers">
+            <summary>
+            Section of card helper methods for the Deutschland, Payback and UK cards.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetAdditionalDeutschlandCard(System.String)">
+            <summary>
+            Gets either Loyalty or barcode card from the other supplied
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetDeutschlandBarcodeCard(System.String)">
+            <summary>
+            Calculates the related Barcode card from Loyalty card supplied.
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CardHelpers.GetDeutschlandLoyaltyCard(System.String)">
+            <summary>
+            Calculates the related Loyalty card from Barcode card supplied.
+            </summary>
+            <param name="cardNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.CommonHelpers">
+            <summary>
+            Class for common helper methods
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.GetValueFromAnonymousType``1(System.Object,System.String)">
+            <summary>
+            Extract the value from a anonymous object by property name
+            </summary>
+            <typeparam name="T">The type of the value</typeparam>
+            <param name="dataitem">The anonymous object</param>
+            <param name="itemkey">The name of the object property</param>
+            <returns>The requested value</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.GetObjectPropertyValuesToString(System.Object,System.String,System.Boolean)">
+            <summary>
+            To return object's properties name and values in a string
+            </summary>
+            <param name="obj">The object</param>
+            <param name="separator">The separator, default ", "</param>
+            <param name="logChildren">Should child class instances and lists be logged</param>
+            <returns>concatenated string values of properties</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.GetObjectListPropertyValuesToString(System.Collections.IEnumerable,System.String,System.Boolean)">
+            <summary>
+            Returns a string of List of un-typed objects property names and property values, for all items in the list
+            </summary>
+            <param name="list"></param>
+            <param name="separator">The separator, default ", "</param>
+            <param name="logChildren">Should child class instances and lists be logged</param>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.GetObjectListPropertyValuesToString``1(System.Collections.Generic.IEnumerable{``0},System.String,System.Boolean)">
+            <summary>
+            Returns a string of List of typed objects property names and property values
+            </summary>
+            <param name="list">This is list of objects of the T Class</param>
+            <param name="separator">The separator, default ", "</param>
+            <param name="logChildren">Should child class instances and lists be logged</param>
+            <typeparam name="T">This could be any class</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.IsEmailAddress(System.String)">
+            <summary>
+            Validates an Email Address
+            </summary>
+            <param name="emailAddress">Email address to validate</param>
+            <returns>true if valid</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.CommonHelpers.IsEmailAddressList(System.String,System.Char)">
+            <summary>
+            Validates that all entries in an email list are correctly formed email address seperated by the seperator character
+            </summary>
+            <param name="list">List of one or more email addresses</param>
+            <param name="seperator">Seperator between email addresses</param>
+            <returns>true if valid</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.EnumHelper.ToEnum``1(System.String)">
+            <summary>
+            Converts the value to an enum
+            </summary>
+            <typeparam name="TEnum">The type of enum.</typeparam>
+            <param name="value">The value to try parse.</param>
+            <returns>The enum value.</returns>
+        </member>
+        <member name="M:Htec.Common.Helpers.EnumHelper.ToEnum``1(System.String,``0)">
+            <summary>
+            Converts the value to an enum
+            </summary>
+            <typeparam name="TEnum">The type of enum.</typeparam>
+            <param name="value">The value to try parse.</param>
+            <param name="defaultEnum">the value to return in the event of failure to parse</param>
+            <returns>The enum value.</returns>
+        </member>
+        <member name="T:Htec.Common.Helpers.ObjectCopier">
+            <summary>
+            Reference Article http://www.codeproject.com/KB/tips/SerializedObjectCloner.aspx
+            Provides a method for performing a deep copy of an object.
+            Binary Serialization is used to perform the copy.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Helpers.ObjectCopier.Clone``1(``0)">
+            <summary>
+            Perform a deep Copy of the object.
+            </summary>
+            <typeparam name="T">The type of object being copied.</typeparam>
+            <param name="source">The object instance to copy.</param>
+            <returns>The copied object.</returns>
+        </member>
+        <member name="T:Htec.Common.IdentityServer.ClaimsHelper">
+            <summary>
+            Claim helper class
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.ClaimsHelper._validOverRides">
+            <summary>
+            Claim ids that are multi type int Dictionary of int tuples
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.ClaimsHelper._logger">
+            <summary>
+            The HTEC Logger
+            </summary>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.ClaimsHelper.TypeName">
+            <summary>
+            This class name
+            </summary>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger)">
+            <summary>
+            Constructor that takes a logger
+            </summary>
+            <param name="logger"></param>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsOverrideIdentifier(System.String)">
+            <summary>
+            Check to see if it is one of the multi claim ids, i.r. countryIDs, partnerIDs, schemeIDs
+            </summary>
+            <param name="claimIdentifier">The id to check</param>
+            <returns>Tru if it is one of the multi claim ids</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.GetIntClaimFromSingle(System.String)">
+            <summary>
+            Checks for a single claim type we know should contain an integer returning it if found or null if not
+            </summary>
+            <param name="claimIdentifier">The claim id</param>
+            <returns>Claim value if found or null if not</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidCombinationInMultiClaim(System.String,System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Looks in a multi claim int Dictionary of int tuples (i.e. countryIDs, schemeIDs or partnerIDs) for at least one matching entry
+            </summary>
+            <param name="claimIdentifier">The claim id, i.e. countryIDs, schemeIDs or partnerIDs</param>
+            <param name="keyValue">The value of the dictionary key</param>
+            <param name="tupleValue1">The value of the first item in the tuple</param>
+            <param name="tupleValue2">The value of the second item in the tuple</param>
+            <returns>True if at least one item matches in the dictionary, false if not found</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidCombinationInSingleClaims(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Look for scheme, country and partner claims and check they match with our parameters if we supply them
+            Must supply at least one parameter that is not null
+            </summary>
+            <param name="schemeId">The scheme id</param>
+            <param name="countryId">The country id</param>
+            <param name="partnerId">The partner id</param>
+            <returns>True if all non null values match with single claims</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.LogMessage(System.String,System.String,System.String[])">
+            <summary>
+            Gets formatted string used for logging purposes
+            </summary>
+            <param name="method">The method name</param>
+            <param name="header">The header</param>
+            <param name="messages">Any additional message</param>
+            <returns>A formatted string used for logging</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.GetAllClaims">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.GetClaimAsType``1(System.String)">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.GetClaimAsInt(System.String)">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidCountry(System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidPartner(System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidScheme(System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsValidCombination(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.GetMissingValueFromCombination(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.ClaimsHelper.IsCountryClaimsDictionaryPresent">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IClaimsHelper"/>
+        </member>
+        <member name="T:Htec.Common.IdentityServer.Constants.Claims">
+            <summary>
+            The claims class
+            </summary>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.Constants.Claims.AllClaims">
+            <summary>
+            All available claims.
+            </summary>
+        </member>
+        <member name="T:Htec.Common.IdentityServer.Constants.Common">
+            <summary>
+            Identity Server constants class.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.Constants.Common.IdentityServerIntrospectRoute">
+            <summary>
+            Instrospect route path.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.Constants.Common.RequestBasicAuthorizationHeaderName">
+            <summary>
+            Name of the basic authorization header.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.Constants.Common.RequestContentStringType">
+            <summary>
+            The introspect content request type.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.Constants.Common.RequestAcceptStringType">
+            <summary>
+            The basic response content type.
+            </summary>
+        </member>
+        <member name="T:Htec.Common.IdentityServer.IdentityServerWrapper">
+            <summary>
+            An Identity server wrapper class 
+            </summary>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.IdentityServerWrapper.TypeName">
+            <summary>
+            This class name
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.IdentityServerWrapper._logger">
+            <summary>
+            The HTEC Logger
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.IdentityServerWrapper._scope">
+            <summary>
+            The scope
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.IdentityServerWrapper._scopeSecret">
+            <summary>
+            The scope secret
+            </summary>
+        </member>
+        <member name="F:Htec.Common.IdentityServer.IdentityServerWrapper._identityClientWrapper">
+            <summary>
+            The HttpClient wrapper
+            </summary>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.IdentityServerWrapper.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,Htec.Common.Abstractions.Net.Http.Interfaces.IHttpClientWrapper,System.String,System.String)">
+            <summary>
+            IdentityServerWrapper constructor
+            </summary>
+            <param name="logger">The HTEC logger</param>
+            <param name="httpClientWrapper">The HTTP Client wrapper object</param>
+            <param name="scope">The wrapper working scope level</param>
+            <param name="scopeSecret">The wrapper working scope secret</param>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.IdentityServerWrapper.GetClaimsAsync(System.String)">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IIdentityServerWrapper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.IdentityServerWrapper.IsValidClaimValue``1(System.String,System.String,``0)">
+            <inheritdoc cref="T:Htec.Common.Interfaces.IdentityServer.IIdentityServerWrapper"/>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.IdentityServerWrapper.GetIntrospectionRequest(System.String,System.String)">
+            <summary>
+            Gets the introspection request
+            </summary>
+            <param name="authorizationHeader">The authorization base64 string</param>
+            <param name="body">The json body string</param>
+            <returns>A HttpRequestMessage</returns>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.IdentityServerWrapper.LogMessage(System.String,System.String,System.String[])">
+            <summary>
+            Gets formatted string used for logging purposes
+            </summary>
+            <param name="method">The method name</param>
+            <param name="header">The header</param>
+            <param name="messages">Any additional message</param>
+            <returns>A formatted string used for logging</returns>
+        </member>
+        <member name="T:Htec.Common.IdentityServer.Model.CountrySchemePartner">
+            <summary>
+            A Model class to hold Country, Scheme and Partner information
+            </summary>
+        </member>
+        <member name="M:Htec.Common.IdentityServer.Model.CountrySchemePartner.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Main constructor
+            </summary>
+            <param name="item1">Item 1 of tuple</param>
+            <param name="item2">Item 2 of tuple</param>
+            <param name="item3">Item 3 of tuple</param>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.Model.CountrySchemePartner.CountryID">
+            <summary>
+            The Country ID
+            </summary>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.Model.CountrySchemePartner.SchemeID">
+            <summary>
+            The Scheme ID
+            </summary>
+        </member>
+        <member name="P:Htec.Common.IdentityServer.Model.CountrySchemePartner.PartnerID">
+            <summary>
+            The Partner ID
+            </summary>
+        </member>
+        <member name="T:Htec.Common.Logger.Extensions.HtecLoggerExtensions">
+            <summary>
+            A class providing useful extension methods for IHtecLogger objects.
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Debug(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a debug <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Info(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a business <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Warn(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type,System.String,System.String)">
+            <summary>
+            Logs a warning <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.Error(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type,System.String,System.Exception,System.String)">
+            <summary>
+            Logs a error <c>message</c> (including <c>namespace</c> , class name and method name).
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="message">The message to be logged.</param>
+            <param name="exception">The exception to be logged.</param>
+            <param name="memberName">
+            An optional parameter representing the method name where the extension method was called. If no value is supplied, a default
+            value from the <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute" /> will be used instead.
+            </param>
+        </member>
+        <member name="M:Htec.Common.Logger.Extensions.HtecLoggerExtensions.SetLoggerProperties(Htec.Logger.Interfaces.Tracing.IHtecLogger,System.Type,System.String)">
+            <summary>
+            Sets the <c>logger</c> properties for the <c>logger</c> call.
+            </summary>
+            <param name="logger">An instance of <see cref="T:Htec.Logger.Interfaces.Tracing.IHtecLogger" /> .</param>
+            <param name="type">A type representing the class where this extension was called.</param>
+            <param name="memberName">A string representing the method name where the extension method was called.</param>
+        </member>
+        <member name="T:Htec.Common.Logger.Extensions.HtecLoggingConstants">
+            <summary>
+            A class providing common logging constants.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.EntryMessage">
+            <summary>
+            The entry message.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.ExitMessage">
+            <summary>
+            The exit message.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.NamespacePropertyName">
+            <summary>
+            The namespace property name.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.ClassNamePropertyName">
+            <summary>
+            The class name property name.
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Logger.Extensions.HtecLoggingConstants.MethodNamePropertyName">
+            <summary>
+            The method name property name.
+            </summary>
+        </member>
+        <member name="T:Htec.Common.Models.EnvironmentData">
+            <summary>
+            Container for information on the application's environment
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Models.EnvironmentData.#ctor">
+            <summary>
+            Creates a new instance of the <see cref="T:Htec.Common.Models.EnvironmentData"/> class.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Models.EnvironmentData.MachineName">
+            <summary>
+            Name of the host machine.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Models.EnvironmentData.ClrVersion">
+            <summary>
+            Version of the .Net CLR.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Models.EnvironmentData.OsVersion">
+            <summary>
+            Version of the host OS.
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Models.EnvironmentData.OsIs64Bit">
+            <summary>
+            Is the host OS 64 bit?
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Models.EnvironmentData.ProcessIs64Bit">
+            <summary>
+            Is the current process 64 bit?
+            </summary>
+        </member>
+        <member name="T:Htec.Common.Providers.LuhnCheckMaskStringProvider">
+            <summary>
+            Provided an implementation of IMaskStringProvider that additionally uses the Luhn algorithm to check for Card Numbers
+            </summary>
+            <inheritdoc cref="T:Htec.Common.Providers.MaskStringProvider"/>
+        </member>
+        <member name="F:Htec.Common.Providers.LuhnCheckMaskStringProvider.LoyaltyCardPattern">
+            <summary>
+            The Regex pattern for a LoyaltyCard - numeric 9-20 in length
+            </summary>
+        </member>
+        <member name="M:Htec.Common.Providers.LuhnCheckMaskStringProvider.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,Htec.Common.Abstractions.Configuration.Interfaces.IConfigurationManager)">
+            <summary>
+            Main constructor
+            </summary>
+            <param name="logger"></param>
+            <param name="configurationManager"></param>
+        </member>
+        <member name="M:Htec.Common.Providers.LuhnCheckMaskStringProvider.IsMaskNeeded(System.String,System.String)">
+            <summary>
+            Overrides the default implementation to additionally perform a Luhn check, on each of the parameters and also the combined value
+            </summary>
+            <param name="key">Key to search for</param>
+            <param name="value">Original value</param>
+            <returns>A Tuple indicating if a mask has occurred, the key/value values new or masked depending</returns>
+        </member>
+        <member name="M:Htec.Common.Providers.LuhnCheckMaskStringProvider.GetMaskedValue(System.String)">
+            <summary>
+            Overrides the default implementation and if it's long enough, replaces the middle section of the string with the a double <see cref="P:Htec.Common.Providers.MaskStringProvider.MaskString" />
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Htec.Common.Providers.MaskStringProvider">
+            <summary>
+            Provides an implementation of IMaskStringProvider based on configuration
+            </summary>
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="F:Htec.Common.Providers.MaskStringProvider.DefaultSensitiveInformationLogged">
+            <summary>
+            The default value for SensitiveInformationLogged
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Providers.MaskStringProvider.DefaultMaskString">
+            <summary>
+            The default value for MaskString
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Providers.MaskStringProvider.DefaultUnmaskedCharacterCount">
+            <summary>
+            The default value for UnmaskedCharacterCount
+            </summary>
+        </member>
+        <member name="F:Htec.Common.Providers.MaskStringProvider.DefaultSeparators">
+            <summary>
+            THe default value for Separators
+            </summary>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.SensitiveInformationLogged">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.MaskString">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.UnmaskedCharacterCount">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.KeysToMask">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.Separators">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="P:Htec.Common.Providers.MaskStringProvider.IsEnabled">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.#ctor(Htec.Logger.Interfaces.Tracing.IHtecLogger,Htec.Common.Abstractions.Configuration.Interfaces.IConfigurationManager)">
+            <summary>
+            Main constructor
+            </summary>
+            <param name="logger"></param>
+            <param name="configurationManager"></param>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.SplitAndMask(System.String)">
+            <summary>
+            Splits the value based on the <see cref="P:Htec.Common.Providers.MaskStringProvider.Separators" /> list and uses <see cref="P:Htec.Common.Providers.MaskStringProvider.KeysToMask" /> to performs a mask on each individual one, masking the keys corresponding value. If masks occur and Warn entry is also logged using <see cref="P:Htec.Common.Providers.MaskStringProvider.SensitiveInformationLogged" />
+            </summary>
+            <param name="value">The complete string to be masked</param>
+            <returns>The masked string</returns>
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.SplitAndMask(System.Collections.Generic.IEnumerable{System.String})">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.SplitAndMask(System.String[])">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.SplitAndMask(System.Object[])">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.IsMaskNeeded(System.String,System.String)">
+            <summary>
+            Determines whether any masking is needed
+            </summary>
+            <param name="key">Key to search for</param>
+            <param name="value">Original value</param>
+            <returns>A Tuple indicating if a mask has occurred, the key/value values new or masked depending</returns>
+        </member>
+        <member name="M:Htec.Common.Providers.MaskStringProvider.GetMaskedValue(System.String)">
+            <inheritdoc cref="T:Htec.Common.Interfaces.Providers.IMaskStringProvider"/>
+        </member>
+    </members>
+</doc>
