@@ -541,7 +541,32 @@ function Initialize-Environment {
     }
 }
 
+function Wait-UserConfirmation {
+    Write-Log "========================================" -Level INFO
+    Write-Log "Ready to begin setup pipeline" -Level INFO
+    Write-Log "Press ENTER to continue or ESC to quit..." -Level INFO
+    Write-Log "========================================" -Level INFO
+
+    # Wait for user input
+    do {
+        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if ($key.VirtualKeyCode -eq 13) {
+            # Enter key pressed - continue
+            Write-Log "Starting setup pipeline..." -Level INFO
+            return $true
+        }
+        elseif ($key.VirtualKeyCode -eq 27) {
+            # Escape key pressed - quit
+            Write-Log "Setup cancelled by user." -Level WARNING
+            exit 0
+        }
+    } while ($true)
+}
+
 function Invoke-SetupPipeline {
+    # Prompt user for confirmation before starting
+    Wait-UserConfirmation
+
     # Phase 1: Package Managers
     Install-Winget
     Test-WingetInstallation
@@ -557,6 +582,7 @@ function Invoke-SetupPipeline {
     # Phase 4: Development Tools
     Install-NodeJs
     Install-AngularCli
+    #Install-Com0Com # i.e download com0com https://sourceforge.net/projects/com0com/files/com0com/3.0.0.0/com0com-3.0.0.0-i386-and-x64-signed.zip/download and extract in C:\TEMP\com0com_x64-signed_v3
 
     # Phase 5: Enterprise Software
     Install-ForcourtService
