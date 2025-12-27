@@ -63,15 +63,15 @@ $Script:Config = @{
 # Winget packages to install
 $Script:WingetPackages = @(
     @{ Name = "Azure CLI";   Id = "Microsoft.AzureCLI" }
-    @{ Name = "Chromium";    Id = "Hibbiki.Chromium" }
-    @{ Name = "Git";         Id = "Git.Git" }
-    @{ Name = "Notepad++";   Id = "Notepad++.Notepad++" }
-    @{ Name = "7-Zip";       Id = "7zip.7zip" }
+    #@{ Name = "Chromium";    Id = "Hibbiki.Chromium" }
+    #@{ Name = "Git";         Id = "Git.Git" }
+    #@{ Name = "Notepad++";   Id = "Notepad++.Notepad++" }
+    #@{ Name = "7-Zip";       Id = "7zip.7zip" }
 )
 
 $ErrorActionPreference = "Continue"
 
-# Wrapper function for Write-LogMessage with file logging for backward compatibility
+# Wrapper function for Write-LogMessage with file logging
 function Write-Log {
     param(
         [Parameter(Mandatory = $false)]
@@ -85,45 +85,6 @@ function Write-Log {
     # Call the shared Write-LogMessage function with file logging
     Write-LogMessage -Message $Message -Level $Level -LogFile $Script:Config.LogFile
 }
-
-# Test-Administrator, Update-EnvironmentPath, Add-PathIfMissing, Test-DotNetFramework, and Invoke-WithRetry are now imported from shared-functions.ps1
-
-# Wrapper for Invoke-WithRetry to use with file logging
-function Invoke-WithRetry {
-    param(
-        [scriptblock]$ScriptBlock,
-        [string]$OperationName,
-        [int]$MaxRetries = $Script:Config.MaxRetries,
-        [int]$DelaySeconds = $Script:Config.RetryDelaySeconds
-    )
-
-    $attempt = 0
-    $success = $false
-
-    while (-not $success -and $attempt -lt $MaxRetries) {
-        $attempt++
-        try {
-            $result = & $ScriptBlock
-            $success = $true
-            return $result
-        }
-        catch {
-            Write-Log "$OperationName attempt $attempt failed: $_" -Level WARNING
-            if ($attempt -lt $MaxRetries) {
-                Write-Log "Retrying in $DelaySeconds seconds..." -Level INFO
-                Start-Sleep -Seconds $DelaySeconds
-                Update-EnvironmentPath
-            }
-        }
-    }
-
-    if (-not $success) {
-        Write-Log "$OperationName failed after $MaxRetries attempts" -Level ERROR
-    }
-    return $null
-}
-
-# Install-Winget and Test-WingetInstallation are now handled by setup-winget.ps1
 
 function Initialize-WingetSetup {
     Write-Log "[PHASE 1] Setting up winget package manager..." -Level INFO
@@ -180,32 +141,6 @@ function Initialize-WingetSetup {
     }
 }
 
-function Install-WingetPackage {
-    param(
-        [Parameter(Mandatory)]
-        [hashtable]$Package
-    )
-
-    Write-Log "Installing $($Package.Name)..." -Level INFO
-
-    try {
-        # Run winget directly without piping to preserve inline progress updates
-        & winget install --id $($Package.Id) --exact --source winget --disable-interactivity --accept-source-agreements --accept-package-agreements
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log "$($Package.Name) installed successfully" -Level SUCCESS
-            return $true
-        }
-        else {
-            Write-Log "$($Package.Name) installation may have encountered issues" -Level WARNING
-            return $false
-        }
-    }
-    catch {
-        Write-Log "Failed to install $($Package.Name): $_" -Level ERROR
-        return $false
-    }
-}
 
 function Install-AllWingetPackages {
     param([array]$Packages)

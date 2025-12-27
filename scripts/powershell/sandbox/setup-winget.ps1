@@ -1,3 +1,6 @@
+# Suppress progress bars to prevent them from polluting log files
+$ProgressPreference = 'SilentlyContinue'
+
 # Try to load shared functions, fallback if not available
 $sharedFunctionsPath = Join-Path $PSScriptRoot "shared-functions.ps1"
 if (Test-Path $sharedFunctionsPath) {
@@ -180,8 +183,35 @@ function Initialize-Environment {
 
         # Upgrade all packages
         Write-LogMessage "Upgrading all winget packages..." -Level INFO
-        winget upgrade --all --accept-package-agreements --accept-source-agreements --force # 2>&1 | Out-Null
+        winget upgrade --all --accept-package-agreements --accept-source-agreements --force --disable-interactivity 2>&1 | Out-Null
         Write-LogMessage "Winget package upgrade completed" -Level SUCCESS
+    }
+}
+
+function Install-WingetPackage {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Package
+    )
+
+    Write-LogMessage "Installing $($Package.Name)..." -Level INFO
+
+    try {
+        # Run winget directly without piping to preserve inline progress updates
+        & winget install --id $($Package.Id) --exact --source winget --disable-interactivity --accept-source-agreements --accept-package-agreements
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-LogMessage "$($Package.Name) installed successfully" -Level SUCCESS
+            return $true
+        }
+        else {
+            Write-LogMessage "$($Package.Name) installation may have encountered issues" -Level WARNING
+            return $false
+        }
+    }
+    catch {
+        Write-LogMessage "Failed to install $($Package.Name): $_" -Level ERROR
+        return $false
     }
 }
 

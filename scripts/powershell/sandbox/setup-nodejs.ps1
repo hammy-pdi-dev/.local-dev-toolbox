@@ -1,6 +1,9 @@
 # setup-nodejs.ps1
 # Standalone script for Node.js installation and verification
 
+# Suppress progress bars to prevent them from polluting log files
+$ProgressPreference = 'SilentlyContinue'
+
 # Try to load shared functions, fallback if not available
 $sharedFunctionsPath = Join-Path $PSScriptRoot "shared-functions.ps1"
 if (Test-Path $sharedFunctionsPath) {
