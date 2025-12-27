@@ -1,6 +1,33 @@
 [CmdletBinding()]
 param()
 
+# Dot-source shared functions first
+$sharedFunctionsPath = Join-Path $PSScriptRoot "shared-functions.ps1"
+if (Test-Path $sharedFunctionsPath) {
+    . $sharedFunctionsPath
+}
+
+# Dot-source setup scripts to reuse their specific functions
+$setupWingetPath = Join-Path $PSScriptRoot "setup-winget.ps1"
+if (Test-Path $setupWingetPath) {
+    . $setupWingetPath
+}
+
+$setupChocolateyPath = Join-Path $PSScriptRoot "setup-chocolatey.ps1"
+if (Test-Path $setupChocolateyPath) {
+    . $setupChocolateyPath
+}
+
+$setupNodeJsPath = Join-Path $PSScriptRoot "setup-nodejs.ps1"
+if (Test-Path $setupNodeJsPath) {
+    . $setupNodeJsPath
+}
+
+$setupAngularPath = Join-Path $PSScriptRoot "setup-angular.ps1"
+if (Test-Path $setupAngularPath) {
+    . $setupAngularPath
+}
+
 # CONFIGURATION
 
 $Script:Config = @{
@@ -44,6 +71,7 @@ $Script:WingetPackages = @(
 
 $ErrorActionPreference = "Continue"
 
+# Wrapper function for Write-LogMessage with file logging for backward compatibility
 function Write-Log {
     param(
         [Parameter(Mandatory = $false)]
@@ -54,46 +82,13 @@ function Write-Log {
         [string]$Level = "INFO"
     )
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-
-    $colorMap = @{
-        "INFO"    = "Cyan"
-        "WARNING" = "Yellow"
-        "ERROR"   = "Red"
-        "SUCCESS" = "Green"
-    }
-
-    Write-Host $logMessage -ForegroundColor $colorMap[$Level]
-    Add-Content -Path $Script:Config.LogFile -Value $logMessage -ErrorAction SilentlyContinue
+    # Call the shared Write-LogMessage function with file logging
+    Write-LogMessage -Message $Message -Level $Level -LogFile $Script:Config.LogFile
 }
 
-function Test-Administrator {
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
+# Test-Administrator, Update-EnvironmentPath, Add-PathIfMissing, Test-DotNetFramework, and Invoke-WithRetry are now imported from shared-functions.ps1
 
-function Update-EnvironmentPath {
-    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-    $env:Path = "$machinePath;$userPath"
-}
-
-function Add-PathIfMissing {
-    param([string]$Directory)
-
-    if ($env:Path -notlike "*$Directory*") {
-        $env:Path = "$Directory;$env:Path"
-    }
-}
-
-function Test-DotNetFramework {
-    $release = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\' -ErrorAction SilentlyContinue |
-               Get-ItemPropertyValue -Name Release -ErrorAction SilentlyContinue
-    return $null -ne $release
-}
-
+# Wrapper for Invoke-WithRetry to use with file logging
 function Invoke-WithRetry {
     param(
         [scriptblock]$ScriptBlock,
@@ -128,91 +123,39 @@ function Invoke-WithRetry {
     return $null
 }
 
-function Install-Winget {
-    Write-Log "Installing winget (Windows Package Manager)..." -Level INFO
+# Install-Winget and Test-WingetInstallation are now handled by setup-winget.ps1
 
-    try {
-        if (Get-Command winget -ErrorAction SilentlyContinue) {
-            Write-Log "winget is already installed" -Level SUCCESS
-            return $true
-        }
+function Initialize-WingetSetup {
+    Write-Log "Setting up winget..." -Level INFO
 
-        Write-Log "winget not found. Installing..." -Level INFO
-        Write-Log "Downloading and executing winget installer from asheroto.com..." -Level INFO
-
-        # Create temporary installation script
-        $tempScriptPath = Join-Path $Script:Config.TempFolder "install-winget-temp.ps1"
-        $installScriptContent = @'
-try {
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-RestMethod -Uri 'https://asheroto.com/winget' | Invoke-Expression
-    exit 0
-} catch {
-    Write-Error "Installation failed: $_"
-    exit 1
-}
-'@
-
-        Set-Content -Path $tempScriptPath -Value $installScriptContent -Force
-        Write-Log "Created temporary installation script at: $tempScriptPath" -Level INFO
-
-        # Execute installation in separate process
-        Write-Log "Launching winget installation in separate process..." -Level INFO
-        $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$tempScriptPath`"" -Wait -PassThru -NoNewWindow
-        Write-Log "Installation process completed with exit code: $($process.ExitCode)" -Level INFO
-
-        # Cleanup
-        Remove-Item $tempScriptPath -Force -ErrorAction SilentlyContinue
-
-        # Finalize installation
-        Write-Log "Waiting for installation to finalize ($($Script:Config.WingetFinalizeDelay) seconds)..." -Level INFO
-        Start-Sleep -Seconds $Script:Config.WingetFinalizeDelay
-
-        Write-Log "Refreshing environment variables..." -Level INFO
-        Update-EnvironmentPath
-
-        # Find winget in common paths
-        $wingetPaths = @(
-            "$env:LOCALAPPDATA\Microsoft\WindowsApps",
-            "$env:ProgramFiles\WindowsApps",
-            "C:\Program Files\WindowsApps"
-        )
-
-        foreach ($path in $wingetPaths) {
-            if (Test-Path "$path\winget.exe") {
-                Write-Log "Found winget.exe at: $path" -Level SUCCESS
-                Add-PathIfMissing -Directory $path
-                break
+    # Check if winget is already installed
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Log "Winget not found. Installing via setup-winget.ps1..." -Level INFO
+        $setupWingetScriptPath = Join-Path $PSScriptRoot "setup-winget.ps1"
+        if (Test-Path $setupWingetScriptPath) {
+            try {
+                # Execute setup-winget.ps1 in a new PowerShell process to avoid function conflicts
+                $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$setupWingetScriptPath`"" -Wait -PassThru -NoNewWindow
+                if ($process.ExitCode -eq 0) {
+                    Write-Log "Winget setup completed successfully" -Level SUCCESS
+                    # Refresh environment after installation
+                    Update-EnvironmentPath
+                    Start-Sleep -Seconds $Script:Config.WingetFinalizeDelay
+                } else {
+                    Write-Log "Winget setup exited with code: $($process.ExitCode)" -Level WARNING
+                }
             }
+            catch {
+                Write-Log "Error running setup-winget.ps1: $_" -Level ERROR
+                Write-Log "Attempting to continue..." -Level WARNING
+            }
+        } else {
+            Write-Log "setup-winget.ps1 not found at: $setupWingetScriptPath" -Level ERROR
+            Write-Log "Attempting to continue without winget setup..." -Level WARNING
         }
-
-        Write-Log "winget installation process completed" -Level SUCCESS
-        return $true
+    } else {
+        Write-Log "Winget is already installed" -Level SUCCESS
     }
-    catch {
-        Write-Log "Error during winget installation: $_" -Level ERROR
-        Write-Log "Continuing with script execution..." -Level WARNING
-        return $false
-    }
-}
-
-function Test-WingetInstallation {
-    Write-Log "Verifying winget installation..." -Level INFO
-
-    $result = Invoke-WithRetry -OperationName "winget verification" -ScriptBlock {
-        $version = winget --version 2>$null
-        if ($version) {
-            Write-Log "winget version: $version" -Level SUCCESS
-            return $true
-        }
-        throw "winget command returned empty"
-    }
-
-    if (-not $result) {
-        Write-Log "winget verification failed. Some installations may fail." -Level ERROR
-    }
-
-    return $result
 }
 
 function Install-WingetPackage {
@@ -251,249 +194,67 @@ function Install-AllWingetPackages {
     }
 }
 
-function Install-Chocolatey {
-    Write-Log "Installing Chocolatey..." -Level INFO
+function Initialize-ChocolateySetup {
+    Write-Log "Setting up Chocolatey..." -Level INFO
 
-    try {
-        if (Get-Command choco -ErrorAction SilentlyContinue) {
-            Write-Log "Chocolatey is already installed" -Level SUCCESS
-            return $true
+    # Check if chocolatey is already installed
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        Write-Log "Chocolatey not found. Installing via setup-chocolatey.ps1..." -Level INFO
+        $setupChocolateyScriptPath = Join-Path $PSScriptRoot "setup-chocolatey.ps1"
+        if (Test-Path $setupChocolateyScriptPath) {
+            try {
+                # Set environment variables for chocolatey source configuration
+                $env:CHOCO_SOURCE_NAME = $Script:Config.ChocoSource.Name
+                $env:CHOCO_SOURCE_URL = $Script:Config.ChocoSource.Url
+                $env:CHOCO_SOURCE_USER = $Script:Config.ChocoSource.User
+                $env:CHOCO_SOURCE_PASSWORD = $Script:Config.ChocoSource.Password
+                $env:CHOCO_SOURCE_PRIORITY = $Script:Config.ChocoSource.Priority
+
+                # Execute setup-chocolatey.ps1 in a new PowerShell process to avoid function conflicts
+                $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$setupChocolateyScriptPath`"" -Wait -PassThru -NoNewWindow
+
+                # Clean up environment variables
+                Remove-Item Env:\CHOCO_SOURCE_NAME -ErrorAction SilentlyContinue
+                Remove-Item Env:\CHOCO_SOURCE_URL -ErrorAction SilentlyContinue
+                Remove-Item Env:\CHOCO_SOURCE_USER -ErrorAction SilentlyContinue
+                Remove-Item Env:\CHOCO_SOURCE_PASSWORD -ErrorAction SilentlyContinue
+                Remove-Item Env:\CHOCO_SOURCE_PRIORITY -ErrorAction SilentlyContinue
+
+                if ($process.ExitCode -eq 0) {
+                    Write-Log "Chocolatey setup completed successfully" -Level SUCCESS
+                    # Refresh environment after installation
+                    Update-EnvironmentPath
+                    Start-Sleep -Seconds 3
+                } else {
+                    Write-Log "Chocolatey setup exited with code: $($process.ExitCode)" -Level WARNING
+                }
+            }
+            catch {
+                Write-Log "Error running setup-chocolatey.ps1: $_" -Level ERROR
+                Write-Log "Attempting to continue..." -Level WARNING
+            }
+        } else {
+            Write-Log "setup-chocolatey.ps1 not found at: $setupChocolateyScriptPath" -Level ERROR
+            Write-Log "Attempting to continue without Chocolatey setup..." -Level WARNING
         }
+    } else {
+        Write-Log "Chocolatey is already installed" -Level SUCCESS
 
-        Write-Log "Chocolatey not found. Installing..." -Level INFO
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-        Update-EnvironmentPath
-        Write-Log "Chocolatey installation completed" -Level SUCCESS
-        return $true
-    }
-    catch {
-        Write-Log "Failed to install Chocolatey: $_" -Level ERROR
-        return $false
-    }
-}
-
-function Test-ChocolateyInstallation {
-    Write-Log "Verifying Chocolatey installation..." -Level INFO
-
-    try {
-        $version = choco --version
-        Write-Log "Chocolatey version: $version" -Level SUCCESS
-        return $true
-    }
-    catch {
-        Write-Log "Chocolatey verification failed: $_" -Level ERROR
-        return $false
-    }
-}
-
-function Add-ChocolateySource {
-    Write-Log "Adding custom Chocolatey source..." -Level INFO
-
-    $source = $Script:Config.ChocoSource
-
-    try {
-        choco source add -n="$($source.Name)" -s="$($source.Url)" --user="$($source.User)" --password="$($source.Password)" --priority=$($source.Priority)
-        Write-Log "Chocolatey source '$($source.Name)' added successfully" -Level SUCCESS
-        return $true
-    }
-    catch {
-        Write-Log "Failed to add Chocolatey source: $_" -Level ERROR
-        return $false
-    }
-}
-
-function Install-NodeJs {
-    param(
-        [string]$Version = $Script:Config.NodeVersion
-    )
-
-    Write-Log "Installing Node.js version $Version via Chocolatey..." -Level INFO
-
-    try {
-        Write-Log "Using Chocolatey to install Node.js $Version (avoiding NVM temp file issues in Sandbox)..." -Level INFO
-        choco install nodejs --version=$Version -y --force --no-progress --limit-output
-
-        Write-Log "Node.js installation completed" -Level SUCCESS
-
-        # Refresh environment and wait for installation to settle
-        Write-Log "Refreshing environment variables for Node.js..." -Level INFO
-        Update-EnvironmentPath
-        Start-Sleep -Seconds $Script:Config.EnvironmentSettleDelay
-
-        # Verify installation
-        return Test-NodeJsInstallation
-    }
-    catch {
-        Write-Log "Failed to install Node.js: $_" -Level ERROR
-        return $false
-    }
-}
-
-function Test-NodeJsInstallation {
-    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-
-    if ($nodeCmd) {
-        $nodeVersion = & node --version 2>&1
-        Write-Log "Node.js version installed: $nodeVersion at $($nodeCmd.Path)" -Level SUCCESS
-
-        $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
-        if ($npmCmd) {
-            $npmVersion = & npm --version 2>&1
-            Write-Log "npm version installed: $npmVersion at $($npmCmd.Path)" -Level SUCCESS
-        }
-        else {
-            Write-Log "npm command not found after Node.js installation" -Level WARNING
-        }
-        return $true
-    }
-
-    # Fallback: search common locations
-    Write-Log "Node.js command not found. Searching for installation..." -Level WARNING
-
-    $nodePaths = @(
-        "$env:ProgramFiles\nodejs\node.exe",
-        "${env:ProgramFiles(x86)}\nodejs\node.exe",
-        "$env:ALLUSERSPROFILE\chocolatey\lib\nodejs\tools\node.exe"
-    )
-
-    foreach ($path in $nodePaths) {
-        if (Test-Path $path) {
-            Write-Log "Found node.exe at: $path" -Level SUCCESS
-            $nodeDir = Split-Path $path -Parent
-            Add-PathIfMissing -Directory $nodeDir
-            [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
-
-            $nodeVersion = & $path --version 2>&1
-            Write-Log "Node.js version: $nodeVersion" -Level SUCCESS
-            return $true
+        # Add custom source if chocolatey is already installed
+        $source = $Script:Config.ChocoSource
+        if ($source.Name -and $source.Url) {
+            Write-Log "Adding custom Chocolatey source..." -Level INFO
+            try {
+                choco source add -n="$($source.Name)" -s="$($source.Url)" --user="$($source.User)" --password="$($source.Password)" --priority=$($source.Priority)
+                Write-Log "Chocolatey source '$($source.Name)' added successfully" -Level SUCCESS
+            }
+            catch {
+                Write-Log "Failed to add Chocolatey source: $_" -Level WARNING
+            }
         }
     }
-
-    return $false
 }
 
-function Find-NpmExecutable {
-    Update-EnvironmentPath
-
-    $npmPaths = @(
-        (Get-Command npm -ErrorAction SilentlyContinue),
-        "$env:NVM_SYMLINK\npm.cmd",
-        "$env:APPDATA\nvm\nodejs\npm.cmd",
-        "$env:ProgramFiles\nodejs\npm.cmd",
-        "C:\Program Files\nodejs\npm.cmd"
-    )
-
-    foreach ($path in $npmPaths) {
-        if ($path -and (Test-Path $path)) {
-            $npmExe = if ($path.Path) { $path.Path } else { $path }
-            Write-Log "Found npm at: $npmExe" -Level SUCCESS
-            return $npmExe
-        }
-    }
-
-    return $null
-}
-
-function Install-AngularCli {
-    param(
-        [string]$Version = $Script:Config.AngularVersion
-    )
-
-    Write-Log "Installing Angular CLI version $Version..." -Level INFO
-
-    try {
-        $npmExe = Find-NpmExecutable
-        if (-not $npmExe) {
-            throw "npm executable not found. Node.js may not be installed correctly."
-        }
-
-        $npmDir = Split-Path $npmExe -Parent
-        Write-Log "npm directory: $npmDir" -Level INFO
-
-        # Create installation script for separate process
-        $scriptPath = Join-Path $Script:Config.TempFolder "install-angular-temp.ps1"
-        $scriptContent = Get-AngularInstallScript -NpmExe $npmExe -NpmDir $npmDir -Version $Version
-
-        Set-Content -Path $scriptPath -Value $scriptContent -Force
-        Write-Log "Created temporary Angular CLI installation script" -Level INFO
-
-        # Execute in separate process
-        Write-Log "Launching Angular CLI installation in separate process..." -Level INFO
-        $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$scriptPath`"" -Wait -PassThru -NoNewWindow
-        Write-Log "Angular CLI installation process completed with exit code: $($process.ExitCode)" -Level INFO
-
-        # Cleanup
-        Remove-Item $scriptPath -Force -ErrorAction SilentlyContinue
-
-        Write-Log "Angular CLI $Version installation completed" -Level SUCCESS
-
-        # Verify installation
-        Update-EnvironmentPath
-        Start-Sleep -Seconds $Script:Config.PostInstallDelay
-
-        $ngCmd = Get-Command ng -ErrorAction SilentlyContinue
-        if ($ngCmd) {
-            Write-Log "Angular CLI verified successfully at: $($ngCmd.Path)" -Level SUCCESS
-            return $true
-        }
-        else {
-            Write-Log "Angular CLI installed but command not yet available - may require new PowerShell session" -Level WARNING
-            return $true
-        }
-    }
-    catch {
-        Write-Log "Failed to install Angular CLI: $_" -Level ERROR
-        return $false
-    }
-}
-
-function Get-AngularInstallScript {
-    param(
-        [string]$NpmExe,
-        [string]$NpmDir,
-        [string]$Version
-    )
-
-    return @"
-# Set up environment variables
-`$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
-`$env:NVM_HOME = [System.Environment]::GetEnvironmentVariable('NVM_HOME','Machine')
-`$env:NVM_SYMLINK = [System.Environment]::GetEnvironmentVariable('NVM_SYMLINK','Machine')
-
-# Disable Angular CLI analytics for non-interactive installation
-`$env:NG_CLI_ANALYTICS = 'false'
-`$env:NG_CLI_ANALYTICS_SHARE = 'false'
-
-# Add npm directory to PATH
-`$env:Path = '$NpmDir;' + `$env:Path
-
-Write-Host 'Installing Angular CLI $Version with analytics disabled...'
-try {
-    `$output = & '$NpmExe' install -g @angular/cli@$Version --no-audit --progress=false --prefer-offline 2>&1
-    Write-Host `$output
-
-    if (`$LASTEXITCODE -ne 0) {
-        Write-Host 'Attempting repair installation...'
-        & '$NpmExe' uninstall -g @angular/cli 2>&1 | Out-Null
-        Start-Sleep -Seconds 2
-        & '$NpmExe' install -g @angular/cli@$Version --force --no-audit 2>&1
-    }
-} catch {
-    Write-Host "Error during installation: `$_"
-}
-
-`$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
-Start-Sleep -Seconds 5
-
-`$ngPath = Get-Command ng -ErrorAction SilentlyContinue
-if (`$ngPath) {
-    Write-Host "Angular CLI found at: `$(`$ngPath.Path)"
-}
-exit 0
-"@
-}
 
 function Install-ForcourtService {
     param(
@@ -567,21 +328,18 @@ function Invoke-SetupPipeline {
     # Prompt user for confirmation before starting
     Wait-UserConfirmation
 
-    # Phase 1: Package Managers
-    Install-Winget
-    Test-WingetInstallation
+    # Phase 1: Package Managers - Setup Winget
+    Initialize-WingetSetup
 
     # Phase 2: Winget Packages
     Install-AllWingetPackages -Packages $Script:WingetPackages
 
     # Phase 3: Chocolatey Setup
-    Install-Chocolatey
-    Test-ChocolateyInstallation
-    Add-ChocolateySource
+    Initialize-ChocolateySetup
 
     # Phase 4: Development Tools
-    Install-NodeJs
-    Install-AngularCli
+    Install-NodeJs -Version $Script:Config.NodeVersion -LogFile $Script:Config.LogFile
+    Install-AngularCli -Version $Script:Config.AngularVersion -LogFile $Script:Config.LogFile
     #Install-Com0Com # i.e download com0com https://sourceforge.net/projects/com0com/files/com0com/3.0.0.0/com0com-3.0.0.0-i386-and-x64-signed.zip/download and extract in C:\TEMP\com0com_x64-signed_v3
 
     # Phase 5: Enterprise Software

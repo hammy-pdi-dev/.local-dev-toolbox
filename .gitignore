@@ -1,8 +1,7 @@
 # Windows Sandbox Setup
 /scripts/powershell/sandbox/.idea/
 /scripts/powershell/sandbox/x_bin/
-/scripts/powershell/Downloads/
-/scripts/powershell/Downloads/Simulators/
+/scripts/powershell/sandbox/Downloads/
 
 # JetBrains Rider
 .idea/
