@@ -103,14 +103,13 @@ function Get-AngularInstallScript {
 
 Write-Host 'Installing Angular CLI $Version with analytics disabled...'
 try {
-    `$output = & '$NpmExe' install -g @angular/cli@$Version --no-audit --progress=false --prefer-offline 2>&1
-    Write-Host `$output
+    `$output = & '$NpmExe' install -g @angular/cli@$Version --no-audit --progress=false --prefer-offline --silent 2>&1
 
     if (`$LASTEXITCODE -ne 0) {
         Write-Host 'Attempting repair installation...'
         & '$NpmExe' uninstall -g @angular/cli 2>&1 | Out-Null
         Start-Sleep -Seconds 2
-        & '$NpmExe' install -g @angular/cli@$Version --force --no-audit 2>&1
+        `$output = & '$NpmExe' install -g @angular/cli@$Version --force --no-audit --silent 2>&1
     }
 } catch {
     Write-Host "Error during installation: `$_"
@@ -154,15 +153,38 @@ function Install-AngularCli {
         Set-Content -Path $scriptPath -Value $scriptContent -Force
         Write-LogMessage "Created temporary Angular CLI installation script" -Level INFO -LogFile $LogFile
 
-        # Execute in separate process
-        Write-LogMessage "Launching Angular CLI installation in separate process..." -Level INFO -LogFile $LogFile
-        $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$scriptPath`"" -Wait -PassThru -NoNewWindow
+        # Execute in separate process and capture output
+        Write-LogMessage "Launching Angular CLI installation..." -Level INFO -LogFile $LogFile
+
+        # Create temporary output files for capturing verbose output
+        $tempOutputFile = Join-Path $Script:Config.TempFolder "angular-install-output.txt"
+        $tempErrorFile = Join-Path $Script:Config.TempFolder "angular-install-error.txt"
+
+        $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$scriptPath`"" -Wait -PassThru -NoNewWindow -RedirectStandardOutput $tempOutputFile -RedirectStandardError $tempErrorFile
+
+        # Append captured output to log file
+        if (Test-Path $tempOutputFile) {
+            $capturedOutput = Get-Content $tempOutputFile -Raw
+            if ($capturedOutput -and $LogFile) {
+                Add-Content -Path $LogFile -Value $capturedOutput -ErrorAction SilentlyContinue
+            }
+            Remove-Item $tempOutputFile -Force -ErrorAction SilentlyContinue
+        }
+
+        if (Test-Path $tempErrorFile) {
+            $capturedError = Get-Content $tempErrorFile -Raw
+            if ($capturedError -and $LogFile) {
+                Add-Content -Path $LogFile -Value $capturedError -ErrorAction SilentlyContinue
+            }
+            Remove-Item $tempErrorFile -Force -ErrorAction SilentlyContinue
+        }
+
         Write-LogMessage "Angular CLI installation process completed with exit code: $($process.ExitCode)" -Level INFO -LogFile $LogFile
 
         # Cleanup
         Remove-Item $scriptPath -Force -ErrorAction SilentlyContinue
 
-        Write-LogMessage "Angular CLI $Version installation completed" -Level SUCCESS -LogFile $LogFile
+        Write-LogMessage "Angular CLI installation completed" -Level SUCCESS -LogFile $LogFile
 
         # Verify installation
         Update-EnvironmentPath
@@ -170,7 +192,7 @@ function Install-AngularCli {
 
         $ngCmd = Get-Command ng -ErrorAction SilentlyContinue
         if ($ngCmd) {
-            Write-LogMessage "Angular CLI verified successfully at: $($ngCmd.Path)" -Level SUCCESS -LogFile $LogFile
+            Write-LogMessage "Angular CLI verified at: $($ngCmd.Path)" -Level SUCCESS -LogFile $LogFile
             return $true
         }
         else {

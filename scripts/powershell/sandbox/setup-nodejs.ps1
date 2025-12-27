@@ -66,16 +66,16 @@ function Install-NodeJs {
         [string]$LogFile = $Script:Config.LogFile
     )
 
-    Write-LogMessage "Installing Node.js version $Version via Chocolatey..." -Level INFO -LogFile $LogFile
+    Write-LogMessage "Installing Node.js version $Version..." -Level INFO -LogFile $LogFile
 
     try {
-        Write-LogMessage "Using Chocolatey to install Node.js $Version (avoiding NVM temp file issues in Sandbox)..." -Level INFO -LogFile $LogFile
-        choco install nodejs --version=$Version -y --force --no-progress --limit-output
+        Write-LogMessage "Using Chocolatey to install Node.js $Version " -Level INFO -LogFile $LogFile
+        choco install nodejs --version=$Version -y --force --no-progress --limit-output 2>&1 | Out-Null
 
         Write-LogMessage "Node.js installation completed" -Level SUCCESS -LogFile $LogFile
 
         # Refresh environment and wait for installation to settle
-        Write-LogMessage "Refreshing environment variables for Node.js..." -Level INFO -LogFile $LogFile
+        Write-LogMessage "Refreshing environment variables..." -Level INFO -LogFile $LogFile
         Update-EnvironmentPath
         Start-Sleep -Seconds $Script:Config.EnvironmentSettleDelay
 
@@ -92,27 +92,27 @@ function Test-NodeJsInstallation {
     param(
         [string]$LogFile = $Script:Config.LogFile
     )
-    
+
     $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 
     if ($nodeCmd) {
         $nodeVersion = & node --version 2>&1
-        Write-LogMessage "Node.js version installed: $nodeVersion at $($nodeCmd.Path)" -Level SUCCESS -LogFile $LogFile
+        Write-LogMessage "Node.js $nodeVersion installed at $($nodeCmd.Path)" -Level SUCCESS -LogFile $LogFile
 
         $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
         if ($npmCmd) {
             $npmVersion = & npm --version 2>&1
-            Write-LogMessage "npm version installed: $npmVersion at $($npmCmd.Path)" -Level SUCCESS -LogFile $LogFile
+            Write-LogMessage "npm $npmVersion installed at $($npmCmd.Path)" -Level SUCCESS -LogFile $LogFile
         }
         else {
             Write-LogMessage "npm command not found after Node.js installation" -Level WARNING -LogFile $LogFile
         }
-        
+
         return $true
     }
 
     # Fallback: search common locations
-    Write-LogMessage "Node.js command not found. Searching for installation..." -Level WARNING -LogFile $LogFile
+    Write-LogMessage "Node.js command not found - searching for installation..." -Level WARNING -LogFile $LogFile
 
     $nodePaths = @(
         "$env:ProgramFiles\nodejs\node.exe",

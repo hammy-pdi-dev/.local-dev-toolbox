@@ -14,4 +14,4 @@
 		<!--Command>powershell.exe -NoExit -ExecutionPolicy Bypass -File C:\TEMP\setup-wsb.ps1</Command-->
 		<Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList '-NoExit -ExecutionPolicy Bypass -File C:\TEMP\setup-wsb.ps1' -Verb RunAs"</Command>
 	</LogonCommand>
-</Configuration>
+</Configuration> 

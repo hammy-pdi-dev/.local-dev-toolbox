@@ -98,22 +98,22 @@ function Install-Winget {
         Write-LogMessage "Installing winget via PowerShell module..." -Level INFO
 
         # Install NuGet package provider
-        Install-PackageProvider -Name NuGet -Force | Out-Null
+        Install-PackageProvider -Name NuGet -Force 2>&1 | Out-Null
 
         # Install Microsoft.WinGet.Client module
         try {
-            Install-Module -Name Microsoft.WinGet.Client -Force | Out-Null
+            Install-Module -Name Microsoft.WinGet.Client -Force 2>&1 | Out-Null
         }
         catch {
             # Retry without repository specification if it fails
-            Install-Module -Name Microsoft.WinGet.Client -Force -SkipPublisherCheck | Out-Null
+            Install-Module -Name Microsoft.WinGet.Client -Force -SkipPublisherCheck 2>&1 | Out-Null
         }
 
         # Import the module
-        Import-Module Microsoft.WinGet.Client
+        Import-Module Microsoft.WinGet.Client 2>&1 | Out-Null
 
         # Repair and update winget
-        Repair-WinGetPackageManager -Latest -Force
+        Repair-WinGetPackageManager -Latest -Force 2>&1 | Out-Null
 
         Write-LogMessage "Winget installed successfully" -Level SUCCESS
     }
@@ -128,7 +128,7 @@ function Test-WingetInstallation {
     $result = Invoke-WithRetry -OperationName "winget verification" -ScriptBlock {
         $version = winget --version 2>$null
         if ($version) {
-            Write-LogMessage "winget version: $version" -Level SUCCESS
+            Write-LogMessage "Winget version: $version" -Level SUCCESS
             return $true
         }
 
@@ -136,7 +136,7 @@ function Test-WingetInstallation {
     }
 
     if (-not $result) {
-        Write-LogMessage "winget verification failed." -Level ERROR
+        Write-LogMessage "Winget verification failed" -Level ERROR
     }
 
     return $result
@@ -180,7 +180,8 @@ function Initialize-Environment {
 
         # Upgrade all packages
         Write-LogMessage "Upgrading all winget packages..." -Level INFO
-        winget upgrade --all --accept-package-agreements --accept-source-agreements --force
+        winget upgrade --all --accept-package-agreements --accept-source-agreements --force # 2>&1 | Out-Null
+        Write-LogMessage "Winget package upgrade completed" -Level SUCCESS
     }
 }
 

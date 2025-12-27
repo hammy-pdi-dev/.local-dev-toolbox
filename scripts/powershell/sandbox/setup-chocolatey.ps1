@@ -68,9 +68,15 @@ function Install-Chocolatey {
             return $true
         }
 
-        Write-LogMessage "Chocolatey not found. Installing..." -Level INFO
+        Write-LogMessage "Chocolatey not found - installing..." -Level INFO
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+        # Capture and suppress verbose output from chocolatey installation
+        $env:ChocolateyInstall = "C:\ProgramData\chocolatey"
+        $installScript = (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')
+
+        # Execute and capture all output (suppress console output)
+        $null = Invoke-Expression $installScript 2>&1 | Out-String
 
         Update-EnvironmentPath
         Write-LogMessage "Chocolatey installation completed" -Level SUCCESS
@@ -125,7 +131,7 @@ function Add-ChocolateySource {
             $chocoArgs += "--password=`"$Password`""
         }
 
-        & choco @chocoArgs
+        & choco @chocoArgs 2>&1 | Out-Null
 
         Write-LogMessage "Chocolatey source '$Name' added successfully" -Level SUCCESS
         return $true
