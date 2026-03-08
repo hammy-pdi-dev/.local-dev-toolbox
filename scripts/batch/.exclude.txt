@@ -1,0 +1,37 @@
+node_modules
+build
+obj
+out
+bin\x86
+bin\x64\Debug\net462
+bin\x64\Debug\net472
+bin\x64\Debug\net481
+bin\x64\Debug\net6.0
+bin\x64\Debug\net8.0
+bin\Debug\net462
+bin\Debug\net472
+bin\Debug\net481
+bin\Debug\net6.0
+bin\Debug\net8.0
+.bin
+.dist
+.next
+.nuxt
+coverage
+logs
+log
+.vs
+.idea
+__pycache__
+TestResults
+.packages
+.angular
+*.log
+*.tmp
+*.cache
+*.user
+*.suo
+*.ds_store
+thumbs.db
+OPTService - Moved to LRM repo\
+OPT.Common - Moved to LRM repo\
