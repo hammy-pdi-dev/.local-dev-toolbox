@@ -623,7 +623,7 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
     }
 }
 
-function Invoke-ParallelRepositoryProcessing ([array]$repositories, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes, [int]$parallel = 4)
+function Invoke-ParallelRepositoryProcessing ([array]$repositories, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes, [switch]$verboseBranches, [int]$parallel = 4)
 {
     $results = [System.Collections.Generic.List[PSCustomObject]]::new()
     if (-not $repositories -or $repositories.Count -eq 0) {
@@ -702,7 +702,7 @@ function Invoke-ParallelRepositoryProcessing ([array]$repositories, [switch]$ski
                     $results.Add($resultObj)
 
                     # Print per-repo progress line (non-deterministic order)
-                    Write-RepositoryProgress -repoResult $resultObj -repoIndex $completedCount -totalRepos $totalRepos
+                    Write-RepositoryProgress -repoResult $resultObj -repoIndex $completedCount -totalRepos $totalRepos -verboseBranches:$verboseBranches
 
                     $jobs.RemoveAt($i)
                 }
@@ -906,7 +906,7 @@ function Invoke-RepositoryProcessing ([array]$repositories, [switch]$skipDirty, 
     }
     else {
         # Parallel path
-        return Invoke-ParallelRepositoryProcessing -repositories $repositories -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -parallel $parallel
+        return Invoke-ParallelRepositoryProcessing -repositories $repositories -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -verboseBranches:$verboseBranches -parallel $parallel
     }
 }
 
