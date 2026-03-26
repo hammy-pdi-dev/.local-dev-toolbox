@@ -36,7 +36,7 @@ function Get-ParsedArguments ([string[]]$argList)
 {
     $result = [ordered]@{
         RootPath = $Script:DefaultRootPath; NoPull = $false; SkipDirty = $false; StashDirty = $false
-        UseRebase = $false; FetchAllRemotes = $false; VerboseBranches = $false
+        UseRebase = $false; FetchAllRemotes = $false; VerboseBranches = $false; Parallel = 4
         Invalid = @()
     }
 
@@ -66,6 +66,8 @@ function Get-ParsedArguments ([string[]]$argList)
             'fetch-all' { $result.FetchAllRemotes = $true; continue }
             'verbose-branches' { $result.VerboseBranches = $true; continue }
             'verbose' { $result.VerboseBranches = $true; continue }
+            'parallel' { if (-not $valuePart) { if ($i + 1 -lt $argList.Count) { $valuePart = $argList[++$i] } else { $result.Invalid += $raw; break } }; $result.Parallel = [int]$valuePart; continue }
+            'p' { if (-not $valuePart) { if ($i + 1 -lt $argList.Count) { $valuePart = $argList[++$i] } else { $result.Invalid += $raw; break } }; $result.Parallel = [int]$valuePart; continue }
             default {
                 if ($raw.StartsWith('-')) { $result.Invalid += $raw; continue }
 
@@ -662,7 +664,7 @@ function Write-CompletionSummary ([array]$results, [System.TimeSpan]$elapsed, [i
     }
 }
 
-function Main ([string]$rootPath, [switch]$noPull, [switch]$skipDirty, [switch]$stashDirty, [switch]$useRebase, [switch]$fetchAllRemotes, [switch]$verboseBranches)
+function Main ([string]$rootPath, [switch]$noPull, [switch]$skipDirty, [switch]$stashDirty, [switch]$useRebase, [switch]$fetchAllRemotes, [switch]$verboseBranches, [int]$parallel = 4)
 {
     # Validate path
     if (-not (Test-Prerequisites -rootPath $rootPath)) { return }
@@ -673,7 +675,7 @@ function Main ([string]$rootPath, [switch]$noPull, [switch]$skipDirty, [switch]$
 
     # Process repositories
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    $results = Invoke-RepositoryProcessing -Repositories $repos -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -verboseBranches:$verboseBranches
+    $results = Invoke-RepositoryProcessing -Repositories $repos -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -verboseBranches:$verboseBranches -parallel:$parallel
     $sw.Stop()
 
     # Show completion summary
@@ -701,4 +703,5 @@ Main -rootPath $parsedArgs.RootPath `
      -stashDirty:$parsedArgs.StashDirty `
      -useRebase:$parsedArgs.UseRebase `
      -fetchAllRemotes:$parsedArgs.FetchAllRemotes `
-     -verboseBranches:$parsedArgs.VerboseBranches
+     -verboseBranches:$parsedArgs.VerboseBranches `
+     -parallel $parsedArgs.Parallel
