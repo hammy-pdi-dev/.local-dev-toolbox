@@ -244,24 +244,37 @@ function Get-RepoStatus ([string]$path)
 {
     try
     {
-        # Check if it's actually a git repository
-        $gitDir = git -C $path rev-parse --git-dir 2>$null
-        if (-not $gitDir) {
-            Write-Warning "Not a git repository: $path"
-            return [PSCustomObject]@{ Branch = '(not a git repo)'; Dirty = $false; Error = $true }
+        # Single git call: --porcelain -b gives branch info on first line + dirty state
+        $output = git -C $path status --porcelain -b 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $output) {
+            Write-Warning "Failed to get status for: $path"
+            return [PSCustomObject]@{ Branch = '(error)'; Dirty = $false; Error = $true }
         }
 
-        # Get current branch
-        $branch = git -C $path symbolic-ref --short HEAD 2>$null
-        if (-not $branch) {
-            # Try to get detached HEAD info with short SHA
-            $shortSha = git -C $path rev-parse --short HEAD 2>$null
-            $branch = if ($shortSha) { "(detached at $shortSha)" } else { '(detached)' }
+        $lines = @($output)
+        $branchLine = $lines[0]
+
+        # Parse branch from "## branch...origin/branch [ahead N]" or "## branch"
+        $branch = if ($branchLine -match '^## (.+?)\.\.\.') {
+            $Matches[1]
+        }
+        elseif ($branchLine -match '^## (.+)$') {
+            $branchName = $Matches[1]
+            # Detect detached HEAD variants
+            if ($branchName -eq 'HEAD (no branch)') {
+                $shortSha = git -C $path rev-parse --short HEAD 2>$null
+                if ($shortSha) { "(detached at $shortSha)" } else { '(detached)' }
+            }
+            else {
+                $branchName
+            }
+        }
+        else {
+            '(unknown)'
         }
 
-        # Check for uncommitted changes
-        $statusOutput = git -C $path status --porcelain 2>$null
-        $dirty = -not [string]::IsNullOrWhiteSpace($statusOutput)
+        # Any lines beyond the branch line indicate uncommitted changes
+        $dirty = $lines.Count -gt 1
 
         [PSCustomObject]@{ Branch = $branch; Dirty = $dirty; Error = $false }
     }
