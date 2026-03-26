@@ -396,6 +396,155 @@ function Pop-StashIfPresent ([string]$path)
     return $ok
 }
 
+function New-RepoProcessingScriptBlock
+{
+    return {
+        param(
+            [string]$Path,
+            [bool]$SkipDirty,
+            [bool]$StashDirty,
+            [bool]$NoPull,
+            [bool]$UseRebase,
+            [bool]$FetchAllRemotes,
+            [string]$GitErrorPattern,
+            [string]$StashConflictPattern
+        )
+
+        $name = Split-Path $Path -Leaf
+
+        # Helper: create result hashtable
+        function New-Result([string]$n, [string]$branch, [string]$dirty, [string]$pulled,
+                           [string]$status, [bool]$hasRemote, [array]$stashMsgs, [array]$pullMsgs,
+                           [array]$diffStat) {
+            return @{
+                Name = $n; Branch = $branch; Dirty = $dirty; Pulled = $pulled
+                Status = $status; HasRemote = $hasRemote
+                StashMessages = $stashMsgs; PullMessages = $pullMsgs; DiffStat = $diffStat
+            }
+        }
+
+        # Check origin exists
+        $remoteExists = (git -C $Path remote 2>$null) -contains 'origin'
+        if (-not $remoteExists) {
+            return (New-Result $name '' 'No' 'No origin' 'Skipped (no origin)' $false @() @() @())
+        }
+
+        # Get branch + dirty state in one call
+        $output = git -C $Path status --porcelain -b 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $output) {
+            return (New-Result $name '(error)' 'No' 'No' 'Error' $true @() @('Failed to read status') @())
+        }
+
+        $lines = @($output)
+        $branchLine = $lines[0]
+
+        $branch = if ($branchLine -match '^## (.+?)\.\.\.') {
+            $Matches[1]
+        }
+        elseif ($branchLine -match '^## (.+)$') {
+            $branchName = $Matches[1]
+            if ($branchName -eq 'HEAD (no branch)') {
+                $shortSha = git -C $Path rev-parse --short HEAD 2>$null
+                if ($shortSha) { "(detached at $shortSha)" } else { '(detached)' }
+            }
+            else { $branchName }
+        }
+        else { '(unknown)' }
+
+        $dirty = $lines.Count -gt 1
+
+        # Handle dirty + skip
+        if ($dirty -and $SkipDirty) {
+            return (New-Result $name $branch 'Yes' 'Skipped' 'Dirty / skipped' $true @() @() @())
+        }
+
+        # Handle dirty + stash
+        $stashRef = $null
+        $stashMessages = @()
+        if ($dirty -and $StashDirty) {
+            $msg = "WIP_$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+            git -C $Path stash push -u -m $msg 2>$null | Out-Null
+
+            $stashMatch = git -C $Path stash list 2>$null | Select-String $msg | Select-Object -First 1
+            if ($stashMatch) {
+                $stashEntry = $stashMatch.ToString()
+                $parts = $stashEntry.Split(':', 3)
+                if ($parts.Length -ge 3) {
+                    $stashRef = "$($parts[0]): $($parts[2].Trim())"
+                } else {
+                    $stashRef = $stashEntry
+                }
+                $stashMessages += "Stashed changes: $stashRef"
+            }
+        }
+
+        # Fetch
+        $fetchArgs = if ($FetchAllRemotes) { @('fetch', '--all', '--prune') } else { @('fetch', 'origin', '--prune') }
+        & git -C $Path @fetchArgs >$null 2>$null
+
+        $pulled = 'No'
+        $statusNote = 'Fetched'
+        $pullMessages = @()
+        $diffStatLines = @()
+
+        if (-not $NoPull) {
+            if ($branch -match '^\(detached') {
+                $statusNote = 'Detached HEAD (fetched)'
+            }
+            else {
+                $pullArgs = if ($UseRebase) { @('pull', '--rebase', '--stat', 'origin', $branch) } else { @('pull', '--ff-only', '--stat', 'origin', $branch) }
+                $pullOutput = & git -C $Path @pullArgs 2>&1
+                $pullSuccess = $LASTEXITCODE -eq 0
+
+                $errorMessages = @()
+                $pullOutput | ForEach-Object {
+                    $line = $_.ToString()
+                    if ($line -match $GitErrorPattern) {
+                        $pullSuccess = $false
+                        $errorMessages += $line
+                    }
+                    if ($line -match '^\s+\S.*\|' -or $line -match '^\s+\d+ files? changed') {
+                        $diffStatLines += $line
+                    }
+                }
+
+                if ($pullSuccess) {
+                    $statusNote = if ($UseRebase) { 'Rebased' } else { 'Fast-forwarded' }
+                    $pulled = 'Yes'
+                }
+                else {
+                    $statusNote = if ($errorMessages.Count -gt 0) { "Pull failed: $($errorMessages[0])" } else { 'Pull failed' }
+                    $pullMessages += 'Pull failed (merge/rebase needed). Manual intervention required.'
+                }
+            }
+        }
+        else {
+            $statusNote = 'Fetched only'
+        }
+
+        # Pop stash if we stashed earlier
+        if ($stashRef) {
+            $stashRefOnly = $stashRef.Split(':')[0]
+            $popOutput = git -C $Path stash pop 2>&1
+            $popOk = $true
+            $popOutput | ForEach-Object {
+                if ($_ -match $StashConflictPattern) { $popOk = $false }
+            }
+            if ($popOk) {
+                $statusNote += " (Stash $stashRefOnly restored)"
+            } else {
+                $statusNote += " (Stash $stashRefOnly conflicts)"
+            }
+
+            $quickStatus = git -C $Path status --porcelain 2>$null
+            $dirty = -not [string]::IsNullOrWhiteSpace($quickStatus)
+        }
+
+        $dirtyStr = if ($dirty) { 'Yes' } else { 'No' }
+        return (New-Result $name $branch $dirtyStr $pulled $statusNote $true $stashMessages $pullMessages $diffStatLines)
+    }
+}
+
 function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes)
 {
     $name = Split-Path $path -Leaf
