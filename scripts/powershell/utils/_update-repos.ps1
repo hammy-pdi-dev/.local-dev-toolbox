@@ -1,5 +1,9 @@
 Set-StrictMode -Version Latest 2>$null
 
+# Ensure UTF-8 output so Unicode symbols render correctly
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 # -------------------------------------------------------------------------
 # Default root directory to scan for repositories
 $Script:DefaultRootPath = 'D:\Repos'
@@ -79,28 +83,28 @@ function Get-ParsedArguments ([string[]]$argList)
             }
         }
     }
-
+	
     return $result
 }
 
 $Script:StatusSymbols = @{
-    # Progress status indicators 
-    Warning     = '⚠️'      # ⚠
-    Error       = '⛔'      # ✖
-    Success     = '✅'      # ✔
-    Failed      = '🔴'      # ❗
-    Forwarded   = '⏩'      # ⏩
-    Skipped     = '⏭️'      # ⏭
-    Info        = 'ℹ️'      # 💡
-    
+    # Progress status indicators (use [char] escapes so file encoding doesn't matter)
+    Warning     = "$([char]0x26A0)$([char]0xFE0F)"         # ⚠️
+    Error       = "$([char]0x26D4)"                        # ⛔
+    Success     = "$([char]0x2705)"                        # ✅
+    Failed      = "$([char]::ConvertFromUtf32(0x1F534))"   # 🔴
+    Forwarded   = "$([char]0x23E9)"                        # ⏩
+    Skipped     = "$([char]0x23ED)$([char]0xFE0F)"         # ⏭️
+    Info        = "$([char]0x2139)$([char]0xFE0F)"         # ℹ️
+	
     # Summary table symbols
-    CheckMark   = '✔'       # ✓
-    CrossMark   = '✖'       # ✗
-    
+    CheckMark   = "$([char]0x2714)"                        # ✔
+    CrossMark   = "$([char]0x2716)"                        # ✖
+	
     # Process indicators
-    Fetching    = '⬇️'      # ⬇
-    Updating    = '🔄'      # 🔄
-    Complete    = '✨'      # ✨
+    Fetching    = "$([char]0x2B07)$([char]0xFE0F)"         # ⬇️
+    Updating    = "$([char]::ConvertFromUtf32(0x1F504))"   # 🔄
+    Complete    = "$([char]0x2728)"                        # ✨
 }
 
 function Format-Text ([string]$text,
@@ -111,7 +115,7 @@ function Format-Text ([string]$text,
     if (-not $colorCode) { 
         $colorCode = 37
     }
-
+	
     return "$([char]27)[$colorCode`m$text$([char]27)[0m"
 }
 
@@ -308,38 +312,43 @@ function Invoke-GitPull ([string]$path, [string]$branch, [switch]$rebase)
         }
         
         # Prepare pull arguments
-        $pullArgs = if ($rebase) { @('pull', '--rebase', 'origin', $branch) } else { @('pull', '--ff-only', 'origin', $branch) }
-        
+        $pullArgs = if ($rebase) { @('pull', '--rebase', '--stat', 'origin', $branch) } else { @('pull', '--ff-only', '--stat', 'origin', $branch) }
+		
         # Execute pull with comprehensive error detection
         $output = & git -C $path @pullArgs 2>&1
         $success = $LASTEXITCODE -eq 0
-        
+		
         # Analyze output for specific error conditions
         $errorMessages = @()
+        $diffStatLines = @()
         $output | ForEach-Object {
             $line = $_.ToString()
             if ($line -match $Script:RegexPatterns.GitErrorPattern) {
                 $success = $false
                 $errorMessages += $line
             }
+            # Capture diffstat lines (file change lines and summary line)
+            if ($line -match '^\s+\S.*\|' -or $line -match '^\s+\d+ files? changed') {
+                $diffStatLines += $line
+            }
             if ($VerbosePreference -eq 'Continue') {
                 Write-Message "  $line" 'White'
             }
         }
-        
+		
         if ($success) {
             $statusText = if ($rebase) { [RepositoryStatus]::Rebased } else { [RepositoryStatus]::FastForwarded }
-        } 
-        else 
+        }
+        else
         {
-            $statusText = if ($errorMessages) { 
-                "$([RepositoryStatus]::PullFailed): $($errorMessages[0])" 
-            } else { 
-                [RepositoryStatus]::PullFailed 
+            $statusText = if ($errorMessages) {
+                "$([RepositoryStatus]::PullFailed): $($errorMessages[0])"
+            } else {
+                [RepositoryStatus]::PullFailed
             }
         }
-       
-        return $success, $statusText
+		
+        return $success, $statusText, $diffStatLines
     }
     catch 
     {
@@ -363,6 +372,7 @@ function Push-StashIfNeeded ([string]$path)
             return $stashEntry
         }
     }
+	
     return $null
 }
 
@@ -373,7 +383,7 @@ function Pop-StashIfPresent ([string]$path)
         if ($_ -match $Script:RegexPatterns.StashConflictPattern) { $ok = $false }
         Write-Host "  $_"
     }
-
+	
     return $ok
 }
 
@@ -385,13 +395,13 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
     {
         return [RepositoryResultFactory]::CreateNoRemoteResult($name)
     }
-
+	
     $status = Get-RepoStatus -path $path
     if ($status.Dirty -and $skipDirty) 
     {
         return [RepositoryResultFactory]::CreateDirtySkippedResult($name, $status.Branch)
     }
-
+	
     $stashRef = $null
     $stashMessages = @()
     if ($status.Dirty -and $stashDirty) 
@@ -399,31 +409,33 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
         $stashRef = Push-StashIfNeeded -path $path
         if ($stashRef) { $stashMessages += "Stashed changes: $stashRef" }
     }
-
+	
     $null = Invoke-GitFetch -path $path -all:$fetchAllRemotes
     $pulled = [PullStatus]::No
     $statusNote = [RepositoryStatus]::Fetched
     $pullMessages = @()
-
-    if (-not $noPull) 
+    $diffStatLines = @()
+	
+    if (-not $noPull)
     {
-        $ok, $note = Invoke-GitPull -path $path -branch $status.Branch -rebase:$useRebase
+        $ok, $note, $stat = Invoke-GitPull -path $path -branch $status.Branch -rebase:$useRebase
         $statusNote = $note
-        if ($ok) 
-        { 
+        if ($stat) { $diffStatLines = @($stat) }
+        if ($ok)
+        {
             $pulled = [PullStatus]::Yes
         }
-
-        if (-not $ok -and $note -eq [RepositoryStatus]::PullFailed) 
-        { 
+		
+        if (-not $ok -and $note -eq [RepositoryStatus]::PullFailed)
+        {
             $pullMessages += 'Pull failed (merge/rebase needed). Manual intervention required.'
         }
     }
-    else 
-    { 
-        $statusNote = [RepositoryStatus]::FetchedOnly 
+    else
+    {
+        $statusNote = [RepositoryStatus]::FetchedOnly
     }
-
+	
     if ($stashRef)
     {
         $ok = Pop-StashIfPresent -path $path
@@ -434,7 +446,7 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
         } else { 
             $statusNote += " (Stash $stashRefOnly conflicts)"
         }
-        
+		
         # Quick dirty check without full status call
         $quickStatus = git -C $path status --porcelain 2>$null
         $status.Dirty = -not [string]::IsNullOrWhiteSpace($quickStatus)
@@ -449,6 +461,7 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
         HasRemote = $true
         StashMessages = $stashMessages
         PullMessages = $pullMessages
+        DiffStat = $diffStatLines
     }
 }
 
@@ -459,7 +472,7 @@ function Write-RepositoryProgress ([PSCustomObject]$repoResult, [int]$repoIndex 
         Write-Warning "Invalid RepoResult object passed to Write-RepositoryProgress"
         return
     }
-
+	
     $name = $repoResult.Name
     $paddedIndex = $repoIndex.ToString().PadLeft(2, '0')
     $paddedTotal = $totalRepos.ToString().PadLeft(2, '0')
@@ -469,7 +482,7 @@ function Write-RepositoryProgress ([PSCustomObject]$repoResult, [int]$repoIndex 
     $namePart = Format-Text -text $name -color 'Cyan'
     $branchPart = Format-Text -text "($($repoResult.Branch))" -color 'Magenta'
     $progressText = "$indexPart $namePart $branchPart"
-
+	
     # Write progress without newline so we can add status icon on same line
     Write-Host $progressText -NoNewline
     
@@ -529,27 +542,28 @@ function Write-Summary ($results, [TimeSpan]$elapsed, [int]$totalRepos)
     # Filter out empty objects
     $cleanSorted = $sorted | Where-Object { $_ -and $_.PSObject.Properties['Name'] -and $_.Name -and $_.Name.Trim() -ne '' }
     
-    # Create formatted objects with colors + symbols
+    # Create formatted objects with colors + symbols, preserving DiffStat for display
     $formattedData = $cleanSorted | ForEach-Object {
-        $branchFormatted = if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) { 
-            Format-Text -text $_.Branch -color 'Magenta' 
-        } else { 
-            $_.Branch 
+        $branchFormatted = if ($_.Branch -notin @('develop', 'master', 'main', '(detached)', '')) {
+            Format-Text -text $_.Branch -color 'Magenta'
+        } else {
+            $_.Branch
         }
-
+		
         $dirtySymbol = if ($_.Dirty -ne 'Yes') { Get-FailureSymbol } else { Get-SuccessSymbol }
         $pulledSymbol = if ($_.Pulled -eq 'Yes') { Get-SuccessSymbol } else { Get-FailureSymbol }
         $statusFormatted = "$(Get-StatusIcon -status $_.Status)$($_.Status)"
-        
+		
         [PSCustomObject]@{
             Name = $_.Name
             Branch = $branchFormatted
             Dirty = $dirtySymbol
             Pulled = $pulledSymbol
             Status = $statusFormatted
+            DiffStat = $_.DiffStat
         }
     }
-    
+
     if ($allUpToDate)
     {
         # Omit Status column when everything is Up to date
@@ -558,9 +572,24 @@ function Write-Summary ($results, [TimeSpan]$elapsed, [int]$totalRepos)
     else
     {
         # Show Status as the last column when mixed states exist
-        $formattedData | Format-Table -AutoSize
+        $formattedData | Select-Object Name, Branch, Dirty, Pulled, Status | Format-Table -AutoSize
     }
-
+	
+    # Show diffstat beneath the table for repos that had changes
+    $reposWithChanges = @($formattedData | Where-Object { $_.DiffStat -and $_.DiffStat.Count -gt 0 })
+    if ($reposWithChanges.Count -gt 0)
+    {
+        Write-Message 'CHANGES:' 'BrightMagenta'
+        foreach ($repo in $reposWithChanges)
+        {
+            Write-Message "  $($repo.Name)" 'Cyan'
+            foreach ($line in $repo.DiffStat)
+            {
+                Write-Message "    $line" 'White'
+            }
+        }
+    }
+	
     Write-Host ''
     Write-Message ("Completed in {0:0.0}s for {1} repositories." -f $elapsed.TotalSeconds, $totalRepos) 'Green'
 }
@@ -573,7 +602,7 @@ function Test-Prerequisites
         $global:LASTEXITCODE = 1;
         return $false;
     }
-
+	
     return $true;
 }
 
