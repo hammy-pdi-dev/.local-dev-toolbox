@@ -317,12 +317,6 @@ function Invoke-GitPull ([string]$path, [string]$branch, [switch]$rebase)
             return $false, [RepositoryStatus]::DetachedHead, @()
         }
 
-        # Verify remote branch exists
-        $remoteExists = git -C $path rev-parse --verify "origin/$branch" 2>$null
-        if (-not $remoteExists -or $LASTEXITCODE -ne 0) {
-            return $false, "$([RepositoryStatus]::NoRemoteBranch) origin/$branch", @()
-        }
-
         # Prepare pull arguments
         $pullArgs = if ($rebase) { @('pull', '--rebase', '--stat', 'origin', $branch) } else { @('pull', '--ff-only', '--stat', 'origin', $branch) }
 
