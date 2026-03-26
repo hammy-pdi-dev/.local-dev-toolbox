@@ -884,26 +884,30 @@ function Get-RepositoriesForProcessing ([string]$rootPath)
     return $repos;
 }
 
-function Invoke-RepositoryProcessing ([array]$repositories, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes, [switch]$verboseBranches)
+function Invoke-RepositoryProcessing ([array]$repositories, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes, [switch]$verboseBranches, [int]$parallel = 4)
 {
-    $results = [System.Collections.Generic.List[PSCustomObject]]::new()
     if (-not $repositories -or $repositories.Count -eq 0)
     {
-        Write-Warning "No repositories provided for processing";
+        Write-Warning "No repositories provided for processing"
+        return @()
+    }
+
+    if ($parallel -le 1) {
+        # Sequential path (original behaviour)
+        $results = [System.Collections.Generic.List[PSCustomObject]]::new()
+        for ($i = 0; $i -lt $repositories.Count; $i++)
+        {
+            $repo = $repositories[$i]
+            $repoResult = Invoke-SingleRepositoryProcessing -path $repo.FullName -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes
+            Write-RepositoryProgress -repoResult $repoResult -repoIndex ($i + 1) -totalRepos $repositories.Count -verboseBranches:$verboseBranches
+            $results.Add($repoResult)
+        }
         return @($results)
     }
-
-    for ($i = 0; $i -lt $repositories.Count; $i++)
-    {
-        $repo = $repositories[$i]
-
-        $repoResult = Invoke-SingleRepositoryProcessing -path $repo.FullName -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes
-        Write-RepositoryProgress -repoResult $repoResult -repoIndex ($i + 1) -totalRepos $repositories.Count -verboseBranches:$verboseBranches
-
-        $results.Add($repoResult)
+    else {
+        # Parallel path
+        return Invoke-ParallelRepositoryProcessing -repositories $repositories -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -parallel $parallel
     }
-
-    return @($results)
 }
 
 function Write-CompletionSummary ([array]$results, [System.TimeSpan]$elapsed, [int]$totalRepos, [switch]$verboseBranches)
@@ -931,7 +935,7 @@ function Main ([string]$rootPath, [switch]$noPull, [switch]$skipDirty, [switch]$
 
     # Process repositories
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    $results = Invoke-RepositoryProcessing -Repositories $repos -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -verboseBranches:$verboseBranches -parallel:$parallel
+    $results = Invoke-RepositoryProcessing -Repositories $repos -skipDirty:$skipDirty -stashDirty:$stashDirty -noPull:$noPull -useRebase:$useRebase -fetchAllRemotes:$fetchAllRemotes -verboseBranches:$verboseBranches -parallel $parallel
     $sw.Stop()
 
     # Show completion summary
