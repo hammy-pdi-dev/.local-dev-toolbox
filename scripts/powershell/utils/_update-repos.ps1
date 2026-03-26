@@ -623,6 +623,113 @@ function Invoke-SingleRepositoryProcessing ([string]$path, [switch]$skipDirty, [
     }
 }
 
+function Invoke-ParallelRepositoryProcessing ([array]$repositories, [switch]$skipDirty, [switch]$stashDirty, [switch]$noPull, [switch]$useRebase, [switch]$fetchAllRemotes, [int]$parallel = 4)
+{
+    $results = [System.Collections.Generic.List[PSCustomObject]]::new()
+    if (-not $repositories -or $repositories.Count -eq 0) {
+        Write-Warning "No repositories provided for processing"
+        return @($results)
+    }
+
+    $throttle = [Math]::Min($repositories.Count, $parallel)
+    $scriptBlock = New-RepoProcessingScriptBlock
+    $gitErrorPattern = $Script:RegexPatterns.GitErrorPattern
+    $stashConflictPattern = $Script:RegexPatterns.StashConflictPattern
+
+    $pool = [RunspaceFactory]::CreateRunspacePool(1, $throttle)
+    $pool.Open()
+
+    try {
+        # Submit all repos to the pool
+        $jobs = [System.Collections.Generic.List[hashtable]]::new()
+        foreach ($repo in $repositories) {
+            $ps = [PowerShell]::Create().AddScript($scriptBlock)
+            $ps.AddParameter('Path', $repo.FullName)
+            $ps.AddParameter('SkipDirty', [bool]$skipDirty)
+            $ps.AddParameter('StashDirty', [bool]$stashDirty)
+            $ps.AddParameter('NoPull', [bool]$noPull)
+            $ps.AddParameter('UseRebase', [bool]$useRebase)
+            $ps.AddParameter('FetchAllRemotes', [bool]$fetchAllRemotes)
+            $ps.AddParameter('GitErrorPattern', $gitErrorPattern)
+            $ps.AddParameter('StashConflictPattern', $stashConflictPattern)
+            $ps.RunspacePool = $pool
+
+            $handle = $ps.BeginInvoke()
+            $jobs.Add(@{ PowerShell = $ps; Handle = $handle; RepoName = $repo.Name })
+        }
+
+        # Poll for completions
+        $totalRepos = $repositories.Count
+        $completedCount = 0
+
+        while ($completedCount -lt $totalRepos) {
+            for ($i = $jobs.Count - 1; $i -ge 0; $i--) {
+                $job = $jobs[$i]
+                if ($job.Handle.IsCompleted) {
+                    try {
+                        $rawResult = $job.PowerShell.EndInvoke($job.Handle)
+                        $resultHash = if ($rawResult -and $rawResult.Count -gt 0) { $rawResult[0] } else { $null }
+
+                        if ($resultHash -and $resultHash -is [hashtable]) {
+                            $resultObj = [PSCustomObject]@{
+                                Name          = $resultHash.Name
+                                Branch        = $resultHash.Branch
+                                Dirty         = $resultHash.Dirty
+                                Pulled        = $resultHash.Pulled
+                                Status        = $resultHash.Status
+                                HasRemote     = $resultHash.HasRemote
+                                StashMessages = @($resultHash.StashMessages)
+                                PullMessages  = @($resultHash.PullMessages)
+                                DiffStat      = @($resultHash.DiffStat)
+                            }
+                        }
+                        else {
+                            $resultObj = [RepositoryResultFactory]::CreateResult(
+                                $job.RepoName, '(error)', 'No', 'No', 'Runspace error',
+                                $false, @(), @('Runspace returned unexpected result'), @())
+                        }
+                    }
+                    catch {
+                        $resultObj = [RepositoryResultFactory]::CreateResult(
+                            $job.RepoName, '(error)', 'No', 'No', "Runspace error: $($_.Exception.Message)",
+                            $false, @(), @($_.Exception.Message), @())
+                    }
+                    finally {
+                        $job.PowerShell.Dispose()
+                    }
+
+                    $completedCount++
+                    $results.Add($resultObj)
+
+                    # Print per-repo progress line (non-deterministic order)
+                    Write-RepositoryProgress -repoResult $resultObj -repoIndex $completedCount -totalRepos $totalRepos
+
+                    $jobs.RemoveAt($i)
+                }
+            }
+
+            if ($completedCount -lt $totalRepos) {
+                Write-Progress -Activity "Updating repositories" `
+                               -Status "[$completedCount/$totalRepos] completed" `
+                               -PercentComplete (($completedCount / $totalRepos) * 100)
+                Start-Sleep -Milliseconds 100
+            }
+        }
+
+        Write-Progress -Activity "Updating repositories" -Completed
+    }
+    finally {
+        # Clean up any remaining jobs on error
+        foreach ($job in $jobs) {
+            try { $job.PowerShell.Dispose() } catch {}
+        }
+        $pool.Close()
+        $pool.Dispose()
+    }
+
+    return @($results)
+}
+
 function Write-RepositoryProgress ([PSCustomObject]$repoResult, [int]$repoIndex = 1, [int]$totalRepos = 1, [switch]$verboseBranches)
 {
     if (-not $repoResult -or -not $repoResult.PSObject.Properties['Name'])
