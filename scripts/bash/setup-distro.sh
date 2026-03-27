@@ -527,3 +527,213 @@ install_languages() {
         fi
     fi
 }
+
+# -------------------------------------------------------------------------
+# Category: cloud
+# -------------------------------------------------------------------------
+
+install_awscli() {
+    if ! needs_install aws; then
+        success "aws-cli (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if pkg_install awscli 2>/dev/null; then
+            success "aws-cli (installed)"
+        else
+            failure "aws-cli (failed)"
+        fi
+        return
+    fi
+
+    # Linux: official installer
+    local tmpdir
+    tmpdir=$(mktemp -d)
+
+    if curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "${tmpdir}/awscliv2.zip" && \
+       unzip -o "${tmpdir}/awscliv2.zip" -d "$tmpdir" >/dev/null && \
+       sudo "${tmpdir}/aws/install" --update >/dev/null 2>&1; then
+        success "aws-cli v2 (installed)"
+    else
+        failure "aws-cli (failed)"
+    fi
+
+    rm -rf "$tmpdir"
+}
+
+install_azure_cli() {
+    if ! needs_install az; then
+        success "azure-cli (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if pkg_install azure-cli 2>/dev/null; then
+            success "azure-cli (installed)"
+        else
+            failure "azure-cli (failed)"
+        fi
+        return
+    fi
+
+    # Linux: Microsoft install script
+    if curl -fsSL https://aka.ms/InstallAzureCLIDeb | sudo bash >/dev/null 2>&1; then
+        success "azure-cli (installed)"
+    else
+        failure "azure-cli (failed)"
+    fi
+}
+
+install_wrangler() {
+    if ! needs_install wrangler; then
+        success "wrangler (already installed)"
+        return
+    fi
+
+    if ! cmd_exists npm; then
+        skipped "wrangler (skipped — npm not available, install languages category first)"
+        return
+    fi
+
+    if npm install -g wrangler >/dev/null 2>&1; then
+        success "wrangler (installed)"
+    else
+        failure "wrangler (failed)"
+    fi
+}
+
+install_cloud() {
+    step "Installing cloud CLIs..."
+    install_awscli
+    install_azure_cli
+    install_wrangler
+}
+
+# -------------------------------------------------------------------------
+# Category: web
+# -------------------------------------------------------------------------
+
+install_web() {
+    step "Installing web server tools..."
+
+    # nginx
+    if ! needs_install nginx; then
+        success "nginx (already installed)"
+    else
+        if pkg_install nginx 2>/dev/null; then
+            success "nginx (installed)"
+        else
+            failure "nginx (failed)"
+        fi
+    fi
+
+    # certbot
+    if ! needs_install certbot; then
+        success "certbot (already installed)"
+    else
+        if [[ "$PLATFORM" == "debian" ]]; then
+            if pkg_install certbot python3-certbot-nginx 2>/dev/null; then
+                success "certbot (installed)"
+            else
+                failure "certbot (failed)"
+            fi
+        else
+            if pkg_install certbot 2>/dev/null; then
+                success "certbot (installed)"
+            else
+                failure "certbot (failed)"
+            fi
+        fi
+    fi
+
+    # mkcert
+    if ! needs_install mkcert; then
+        success "mkcert (already installed)"
+    else
+        if pkg_install mkcert 2>/dev/null; then
+            success "mkcert (installed)"
+        else
+            failure "mkcert (failed)"
+        fi
+    fi
+}
+
+# -------------------------------------------------------------------------
+# Category: containers
+# -------------------------------------------------------------------------
+
+install_containers() {
+    step "Installing container tools..."
+
+    if ! needs_install docker; then
+        success "docker (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew install --cask docker 2>/dev/null; then
+            success "docker desktop (installed)"
+        else
+            failure "docker (failed)"
+        fi
+        return
+    fi
+
+    # Linux: official install script
+    if curl -fsSL https://get.docker.com | sudo sh >/dev/null 2>&1; then
+        # Add current user to docker group
+        sudo usermod -aG docker "$USER" 2>/dev/null || true
+        success "docker + compose (installed — log out and back in for group changes)"
+    else
+        failure "docker (failed)"
+    fi
+}
+
+# -------------------------------------------------------------------------
+# Category: powershell
+# -------------------------------------------------------------------------
+
+install_powershell() {
+    step "Installing PowerShell..."
+
+    if ! needs_install pwsh; then
+        success "powershell (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew install --cask powershell 2>/dev/null; then
+            success "powershell (installed)"
+        else
+            failure "powershell (failed)"
+        fi
+        return
+    fi
+
+    # Debian/Ubuntu: Microsoft package repo
+    if ! [[ -f /etc/apt/sources.list.d/microsoft-prod.list ]] && \
+       ! [[ -f /etc/apt/sources.list.d/microsoft.list ]]; then
+        local release_id release_version deb_url
+        source /etc/os-release
+        release_id="${ID}"
+        release_version="${VERSION_ID}"
+
+        # Use Ubuntu repo for Ubuntu, Debian repo for Debian
+        deb_url="https://packages.microsoft.com/config/${release_id}/${release_version}/packages-microsoft-prod.deb"
+
+        local tmpdir
+        tmpdir=$(mktemp -d)
+        if curl -fsSL "$deb_url" -o "${tmpdir}/packages-microsoft-prod.deb"; then
+            sudo dpkg -i "${tmpdir}/packages-microsoft-prod.deb" >/dev/null 2>&1
+            sudo apt update >/dev/null 2>&1
+        fi
+        rm -rf "$tmpdir"
+    fi
+
+    if sudo apt install -y powershell 2>/dev/null; then
+        success "powershell (installed)"
+    else
+        failure "powershell (failed)"
+    fi
+}
