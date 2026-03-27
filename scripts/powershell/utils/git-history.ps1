@@ -1,22 +1,44 @@
 param (
     [Parameter(Mandatory = $false)]
     [string]$RepositoryPath = "D:\Repos\Hydra.OPT.Service", # (Get-Location).Path,
-
+    
     [Parameter(Mandatory = $false)]
     [ValidateSet("today", "this_week", "last_week", "last_4_weeks", "current_month", "last_month")]
     [string]$Period = "last_4_weeks",
-
+    
     [Parameter(Mandatory = $false)]
     [switch]$OutputToConsole = $true
 )
 
-# Function to calculate date range based on period
-function Get-DateRange ([string]$period) 
+Set-StrictMode -Version Latest 2>$null
+
+# Ensure UTF-8 output so Unicode symbols render correctly
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+# -------------------------------------------------------------------------
+# Pre-compiled regex patterns
+$Script:RegexPatterns = @{
+    GitLogEntry        = '^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s*[+-]\d{4}\|'
+    TicketNumber       = '^(#?\d+|#\d+:)\s*(.*)'
+    MessageWithDash    = '^-'
+    SemicolonTruncate  = '^([^;]*);'
+    AndTruncate        = '^(.*?) and '
+    TrailingSemicolons  = ';+$'
+    TrailingPeriods    = '\.+$'
+    DuplicatePeriods   = '\.\s*\.'
+    ProperCase         = '^((?:\d+\s*-\s*|\s*-\s*)?)(\w)(\w*)(.*)$'
+    AuthorTwoNames     = '(\w)\w*\s+(\w)'
+    AuthorOneName      = '(\w)'
+}
+# -------------------------------------------------------------------------
+
+function Get-DateRange ([string]$period)
 {
     $today = Get-Date
     $startDate = $null
     $endDate = $today.AddDays(1).Date  # Include up to end of today
-
+    
     switch ($period) {
         "today" {
             $startDate = $today.Date
@@ -44,12 +66,11 @@ function Get-DateRange ([string]$period)
             exit 1
         }
     }
-
+    
     return $startDate, $endDate
 }
 
-# Function to validate Git repository
-function Test-GitRepository([string]$path)
+function Test-GitRepository ([string]$path)
 {
     try {
         Push-Location -Path $path
@@ -75,45 +96,31 @@ function Get-CommitData ([string]$path, [datetime]$startDate, [datetime]$endDate
         # Get commits with author date, author name, and message
         $commits = git log --since="$since" --until="$until" --pretty="%ad|%an|%B" --date=iso --no-merges
         
-        # Define regex patterns used for processing
         $commitData = @()
-        $patterns = @{
-            GitLogEntry = '^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s*[+-]\d{4}\|'
-            TicketNumber = '^(#?\d+|#\d+:)\s*(.*)'
-            MessageWithDash = '^-'
-            SemicolonTruncate = '^([^;]*);'
-            AndTruncate = '^(.*?) and '
-            TrailingSemicolons = ';+$'
-            TrailingPeriods = '\.+$'
-            DuplicatePeriods = '\.\s*\.'
-            ProperCase = '^((?:\d+\s*-\s*|\s*-\s*)?)(\w)(\w*)(.*)$'
-            AuthorTwoNames = '(\w)\w*\s+(\w)'
-            AuthorOneName = '(\w)'
-        }
         
         foreach ($commit in ($commits -split "`n")) {
             $commit = $commit.Trim()
             
             # Step 1: Parse git log entry format (date|author|message)
-            if ($commit -match $patterns.GitLogEntry) {
+            if ($commit -match $Script:RegexPatterns.GitLogEntry) {
                 $parts = $commit -split '\|', 3
                 $commitDateStr = $parts[0].Trim()
                 $authorName = $parts[1].Trim()
                 $message = $parts[2].Trim()
                 
                 # Step 2: Extract ticket number and message
-                if ($message -match $patterns.TicketNumber) {
+                if ($message -match $Script:RegexPatterns.TicketNumber) {
                     $ticket = $matches[1] -replace '[^0-9]', ''
                     $commitMessage = $matches[2].Trim()
                     
                     # Step 3: Message cleanup and normalization
-                    $commitMessage = Format-CommitMessage -message $commitMessage -patterns $patterns
+                    $commitMessage = Format-CommitMessage -message $commitMessage
                     
                     # Step 4: Extract author initials
-                    $authorInitials = Get-AuthorInitials -authorName $authorName -patterns $patterns
+                    $authorInitials = Get-AuthorInitials -authorName $authorName
                     
                     # Step 5: Parse commit date
-                    $commitDate = Parse-CommitDate -dateString $commitDateStr
+                    $commitDate = ConvertTo-CommitDate -dateString $commitDateStr
                     if ($null -eq $commitDate) { continue }
                     
                     # Step 6: Create commit data object
@@ -136,13 +143,12 @@ function Get-CommitData ([string]$path, [datetime]$startDate, [datetime]$endDate
     }
 }
 
-# Helper function to format and clean commit messages
-function Format-CommitMessage([string]$message, [hashtable]$patterns)
+function Format-CommitMessage ([string]$message)
 {
     $commitMessage = $message
     
     # Handle messages starting with a dash
-    if ($commitMessage -match $patterns.MessageWithDash) {
+    if ($commitMessage -match $Script:RegexPatterns.MessageWithDash) {
         $commitMessage = " $commitMessage"
     }
     
@@ -150,20 +156,21 @@ function Format-CommitMessage([string]$message, [hashtable]$patterns)
     $commitMessage = $commitMessage -replace "- ", " "
     
     # Truncate at first semicolon or " and "
-    if ($commitMessage -match $patterns.SemicolonTruncate) {
+    if ($commitMessage -match $Script:RegexPatterns.SemicolonTruncate) {
         $commitMessage = $matches[1].Trim()
-    } elseif ($commitMessage -match $patterns.AndTruncate) {
+    }
+    elseif ($commitMessage -match $Script:RegexPatterns.AndTruncate) {
         $commitMessage = $matches[1].Trim()
     }
     
     # Remove trailing punctuation
-    $commitMessage = $commitMessage -replace $patterns.TrailingSemicolons, ''
-    $commitMessage = $commitMessage -replace $patterns.TrailingPeriods, ''
-    $commitMessage = $commitMessage -replace $patterns.DuplicatePeriods, '.'
+    $commitMessage = $commitMessage -replace $Script:RegexPatterns.TrailingSemicolons, ''
+    $commitMessage = $commitMessage -replace $Script:RegexPatterns.TrailingPeriods, ''
+    $commitMessage = $commitMessage -replace $Script:RegexPatterns.DuplicatePeriods, '.'
     $commitMessage = $commitMessage.Trim()
     
     # Apply proper case to first word
-    if ($commitMessage -match $patterns.ProperCase) {
+    if ($commitMessage -match $Script:RegexPatterns.ProperCase) {
         $prefix = $matches[1]        # Optional prefix: "digits - " or "- " or empty
         $firstLetter = $matches[2]   # First letter of the actual word
         $restOfWord = $matches[3]    # Rest of first word
@@ -174,32 +181,32 @@ function Format-CommitMessage([string]$message, [hashtable]$patterns)
     return $commitMessage
 }
 
-# Helper function to extract author initials
-function Get-AuthorInitials([string]$authorName, [hashtable]$patterns)
+function Get-AuthorInitials ([string]$authorName)
 {
     $authorInitials = ""
-    if ($authorName -match $patterns.AuthorTwoNames) {
+    if ($authorName -match $Script:RegexPatterns.AuthorTwoNames) {
         $authorInitials = "$($matches[1])$($matches[2])".ToUpper()
-    } elseif ($authorName -match $patterns.AuthorOneName) {
+    }
+    elseif ($authorName -match $Script:RegexPatterns.AuthorOneName) {
         $authorInitials = $matches[1].ToUpper()
     }
     
     return $authorInitials
 }
 
-# Helper function to parse commit dates
-function Parse-CommitDate([string]$dateString)
+function ConvertTo-CommitDate ([string]$dateString)
 {
-    try 
+    try
     {
         # Handle ISO date format with timezone offset
         return [datetime]::ParseExact($dateString, "yyyy-MM-dd HH:mm:ss zzz", $null)
-    } 
+    }
     catch {
         try {
             # Fallback to general parsing
             return [datetime]::Parse($dateString)
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to parse date '$dateString' for commit. Skipping."
             return $null
         }
@@ -211,16 +218,16 @@ try
 {
     # Validate repository
     Test-GitRepository -path $RepositoryPath
-
+    
     # Get repository name
     $repoName = Split-Path $RepositoryPath -Leaf
-
+    
     # Get date range
     $startDate, $endDate = Get-DateRange -period $Period
-
+    
     # Get commit data
     $commitData = Get-CommitData -path $RepositoryPath -startDate $startDate -endDate $endDate
-
+    
     # Group by ticket number and collect unique tickets
     $tickets = $commitData | Select-Object -Property Ticket -Unique | Sort-Object Ticket
     $releaseNotes = "# $repoName Release Notes`n`n"
@@ -234,7 +241,7 @@ try
         }
         $releaseNotes += "`n"
     }
-
+    
     # Add commit history
     $releaseNotes += "## $repoName History`n"
     $releaseNotes += "----------------------------------------------------------------`n"
@@ -242,12 +249,12 @@ try
         $formattedDate = $commit.DateTime.ToString("yyyyMM dd HH:mm:ss")
         $releaseNotes += "$formattedDate | $($commit.AuthorInitials) | - #$($commit.Ticket): $($commit.Message).`n"
     }
-
+    
     # If no commits found
     if ($commitData.Count -eq 0) {
         $releaseNotes += "- No commits found for the specified period.`n"
     }
-
+    
     # Output based on parameter
     if ($OutputToConsole) {
         Write-Output $releaseNotes

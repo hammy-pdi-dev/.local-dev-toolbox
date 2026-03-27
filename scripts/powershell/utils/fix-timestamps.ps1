@@ -1,21 +1,44 @@
 # fix-timestamps.ps1
 
-# Config
-$folderPath = "C:\Backups\_Builds\_Forecourt_Service\Local\"
-$extensions = @(".pdb", ".xml", ".config", ".dll", ".exe") 
-$timestamp  = Get-Date "2026-03-30 07:46:50"
+Set-StrictMode -Version Latest 2>$null
 
-# Verify filtered files
-# Get-ChildItem -Path $folderPath -File | Select-Object Name, Extension
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Apply timestamps
-Get-ChildItem -Path $folderPath -File |
-Where-Object { $extensions -contains $_.Extension.ToLower() } |
-ForEach-Object {
-    $_.CreationTime   = $timestamp
-    $_.LastWriteTime  = $timestamp
-    $_.LastAccessTime = $timestamp
-    Write-Host "Updated: $($_.Name)"
+# -------------------------------------------------------------------------
+# Configuration
+$Script:Config = @{
+    FolderPath  = 'C:\Backups\_Builds\_Forecourt_Service\Local\'
+    Extensions  = @('.pdb', '.xml', '.config', '.dll', '.exe')
+    Timestamp   = Get-Date '2026-03-30 07:46:50'
+}
+# -------------------------------------------------------------------------
+
+function Set-FileTimestamps ([string]$folderPath, [string[]]$extensions, [datetime]$timestamp)
+{
+    Get-ChildItem -Path $folderPath -File |
+    Where-Object { $extensions -contains $_.Extension.ToLower() } |
+    ForEach-Object {
+        $_.CreationTime   = $timestamp
+        $_.LastWriteTime  = $timestamp
+        $_.LastAccessTime = $timestamp
+        Write-Host "Updated: $($_.Name)"
+    }
 }
 
-Write-Host "Done."
+function Main ([string]$folderPath, [string[]]$extensions, [datetime]$timestamp)
+{
+    if (-not (Test-Path -Path $folderPath -PathType Container))
+    {
+        Write-Error "FolderPath '$folderPath' does not exist or is not a directory."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    Set-FileTimestamps -folderPath $folderPath -extensions $extensions -timestamp $timestamp
+    Write-Host 'Done.'
+}
+
+Main -folderPath $Script:Config.FolderPath `
+     -extensions $Script:Config.Extensions `
+     -timestamp $Script:Config.Timestamp
