@@ -29,7 +29,7 @@ vim ~/.bashrc.local
 
 ## Template
 
-A `.bashrc.local.example` template is provided in `scripts/bash/` with commented-out sections for all common settings. Copy it and uncomment what you need.
+A [`.bashrc.local.example`](../../../scripts/bash/.bashrc.local.example) template is provided in `scripts/bash/` with commented-out sections for all common settings. Copy it and uncomment what you need.
 
 ## Security
 

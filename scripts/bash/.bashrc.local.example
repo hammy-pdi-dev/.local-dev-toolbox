@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# ~/.bashrc.local - Personal overrides (DO NOT commit secrets to version control)
+#
+# Copy this template and fill in your values:
+#   cp scripts/bash/.bashrc.local.example ~/.bashrc.local
+#
+# This file is sourced at the end of .bashrc, so anything here takes precedence.
+# It is gitignored and should never be committed.
+
+#################### CLAUDE CODE / AWS BEDROCK ####################
+
+export AWS_PROFILE=pdi-bedrock
+export AWS_REGION=us-east-1
+export AWS_DEFAULT_REGION=us-east-1
+export CLAUDE_CODE_USE_BEDROCK=1
+
+# Prompts for AWS SSO login on shell start.
+# Requires prompt_continue() from .bashrc.
+if prompt_continue "Run aws sso login session?"; then
+    export BROWSER='/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+    aws sso login --profile pdi-bedrock
+fi
+
+#################### AZURE DEVOPS ####################
+
+export AZURE_DEVOPS_AUTH_METHOD=pat
+export AZURE_DEVOPS_ORG_URL=https://pdidev.visualstudio.com/PDI
+export AZURE_DEVOPS_PAT=<your-personal-access-token>
+export AZURE_DEVOPS_DEFAULT_PROJECT=PDIDev
+
+#################### ATLASSIAN ####################
+
+export ATLASSIAN_SITE_NAME="pdisoftware"
+export ATLASSIAN_USER_EMAIL="<your-email>@pditechnologies.com"
+export ATLASSIAN_API_TOKEN="<your-api-token>"
+
+#################### PROMPT ####################
+
+# Starship — cross-shell customisable prompt (https://starship.rs)
+export STARSHIP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/starship/starship.toml"
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+
+#################### PERSONAL ALIASES ####################
+
+alias cai="claude --allowedTools --dangerously-skip-permissions --add-dir /.docs/"
+alias cdrec="cd \"/mnt/c/Users/<your.username>/Videos/Screen Recordings\""
+alias downloads="cd \"/mnt/c/users/<your.username>/downloads\""
+alias cdfs="cd \"/mnt/d/repos/hydra.opt.service\""
+alias cdlib="cd \"/mnt/d/repos/hydra.opt.service/packages\""
+alias cdmd="cd \"/mnt/d/repos/hydra.opt.service/.docs\""
+
+#################### STARTUP ####################
+
+cdfs
+cls
+git status
