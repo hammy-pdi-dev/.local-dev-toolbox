@@ -737,3 +737,57 @@ install_powershell() {
         failure "powershell (failed)"
     fi
 }
+
+# -------------------------------------------------------------------------
+# Main
+# -------------------------------------------------------------------------
+
+main() {
+    detect_platform
+    msg "Platform: $PLATFORM ($PKG_MANAGER)" "bright_cyan"
+    printf '\n'
+
+    # Update package index
+    if [[ "$UPGRADE" == "true" ]]; then
+        step "Updating package index..."
+        pkg_update >/dev/null 2>&1
+        success "Package index updated"
+        printf '\n'
+    fi
+
+    # Run categories in dependency order
+    local categories=(core cli shell languages cloud web containers powershell)
+    local ran=0
+
+    for category in "${categories[@]}"; do
+        if should_run_category "$category"; then
+            "install_${category}"
+            printf '\n'
+            ((ran++)) || true
+        fi
+    done
+
+    if [[ $ran -eq 0 ]]; then
+        warn "No categories selected. Run with --help for usage."
+        exit 0
+    fi
+
+    msg "$SYM_SUCCESS Setup complete." "bright_green"
+}
+
+# -------------------------------------------------------------------------
+# Entry point
+# -------------------------------------------------------------------------
+
+parse_args "$@"
+
+if [[ ${#INVALID_ARGS[@]} -gt 0 ]]; then
+    msg "Unrecognised option(s):" "red"
+    for arg in "${INVALID_ARGS[@]}"; do
+        msg "  $arg" "red"
+    done
+    show_usage
+    exit 2
+fi
+
+main
