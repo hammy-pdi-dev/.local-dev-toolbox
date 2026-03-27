@@ -1,6 +1,5 @@
 # Windows Sandbox Setup
 /scripts/powershell/sandbox/.idea/
-/scripts/powershell/sandbox/x_bin/
 /scripts/powershell/sandbox/Downloads/
 
 # JetBrains Rider
@@ -11,6 +10,7 @@
 /.claude/settings.local.json
 /.claude/worktrees/
 /.docs/.obsidian/
+/CLAUDE.md
 
 # Temporary files
 *.log
@@ -21,4 +21,10 @@
 /scripts/bash/.claude.json
 /scripts/bash/.bashrc.local
 
+# Exclude any build pattern specific folders
+**/v[0-9]*.*/
+**/v.[0-9]*.*/
+
+# Exclude Staging folders 
+/scripts/powershell/sandbox/x_bin/
 /scripts/powershell/utils/wip/
