@@ -52,9 +52,25 @@ warn() { printf '%sWARNING: %s%s\n' "$C_YELLOW" "$1" "$C_RESET" >&2; }
 err()  { printf '%sERROR: %s%s\n'   "$C_RED"    "$1" "$C_RESET" >&2; }
 
 step()    { msg "$SYM_STEP $1" "cyan"; }
-success() { msg "  $SYM_SUCCESS $1" "green"; }
-failure() { msg "  $SYM_FAILED $1" "red"; }
-skipped() { msg "  $SYM_SKIPPED $1" "yellow"; }
+
+success() {
+    msg "  $SYM_SUCCESS $1" "green"
+    if [[ "$1" == *"(already installed"* ]]; then
+        ((COUNT_SKIPPED++)) || true
+    else
+        ((COUNT_INSTALLED++)) || true
+    fi
+}
+
+failure() {
+    msg "  $SYM_FAILED $1" "red"
+    ((COUNT_FAILED++)) || true
+}
+
+skipped() {
+    msg "  $SYM_SKIPPED $1" "yellow"
+    ((COUNT_SKIPPED++)) || true
+}
 
 # -------------------------------------------------------------------------
 # Platform detection (get_distro extended from .bashrc to include macOS)
@@ -110,29 +126,6 @@ detect_platform() {
     esac
 }
 
-# Archive extraction helper (from .bashrc)
-extract() {
-    for file in "$@"; do
-        if [[ -f "$file" ]]; then
-            case "$file" in
-                *.tar.bz2) tar xjf "$file" ;;
-                *.tar.gz)  tar xzf "$file" ;;
-                *.tar.xz)  tar xJf "$file" ;;
-                *.bz2)     bunzip2 "$file" ;;
-                *.gz)      gunzip "$file" ;;
-                *.tar)     tar xf "$file" ;;
-                *.tbz2)    tar xjf "$file" ;;
-                *.tgz)     tar xzf "$file" ;;
-                *.zip)     unzip -o "$file" ;;
-                *.7z)      7z x "$file" ;;
-                *)         warn "Unknown archive format: $file" ;;
-            esac
-        else
-            warn "File not found: $file"
-        fi
-    done
-}
-
 # -------------------------------------------------------------------------
 # Package manager abstraction
 # -------------------------------------------------------------------------
@@ -146,7 +139,6 @@ pkg_name() {
             python3-pip)           echo "" ;;
             python3-venv)          echo "" ;;
             python3-certbot-nginx) echo "" ;;
-            fd-find)               echo "fd" ;;
             *)                     echo "$name" ;;
         esac
     else
@@ -201,13 +193,6 @@ cmd_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Install via curl | bash pattern
-curl_install() {
-    local url="$1"
-    shift
-    curl -fsSL "$url" | bash "$@"
-}
-
 # Guard: skip if command exists and --upgrade is not set
 needs_install() {
     local cmd="$1"
@@ -226,6 +211,10 @@ UPGRADE=false
 ONLY_CATEGORIES=""
 SKIP_CATEGORIES=""
 INVALID_ARGS=()
+
+COUNT_INSTALLED=0
+COUNT_SKIPPED=0
+COUNT_FAILED=0
 
 # -------------------------------------------------------------------------
 # Argument parsing
@@ -394,6 +383,7 @@ install_cli() {
     for tool in "${tools[@]}"; do
         local cmd="$tool"
         [[ "$tool" == "ripgrep" ]] && cmd="rg"
+        [[ "$tool" == "bat" && "$PLATFORM" == "debian" ]] && cmd="batcat"
 
         if ! needs_install "$cmd"; then
             success "$tool (already installed)"
@@ -422,7 +412,6 @@ install_nerd_font() {
             return
         fi
 
-        brew tap homebrew/cask-fonts 2>/dev/null || true
         if brew install --cask "font-fira-code-nerd-font" 2>/dev/null; then
             success "Nerd Font $font_name (installed)"
         else
@@ -771,6 +760,14 @@ main() {
         warn "No categories selected. Run with --help for usage."
         exit 0
     fi
+
+    # Summary
+    printf '\n'
+    msg "Summary:" "bright_cyan"
+    msg "  Installed: $COUNT_INSTALLED" "green"
+    msg "  Skipped:   $COUNT_SKIPPED" "yellow"
+    msg "  Failed:    $COUNT_FAILED" "red"
+    printf '\n'
 
     msg "$SYM_SUCCESS Setup complete." "bright_green"
 }
