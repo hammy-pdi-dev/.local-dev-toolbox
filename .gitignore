@@ -7,8 +7,18 @@
 .idea/
 *.sln.iml
 
-# Logs and temporary files
+# Claude
+/.claude/settings.local.json
+/.claude/worktrees/
+/.docs/.obsidian/
+
+# Temporary files
 *.log
 *.tmp
 *.bak
 *.old
+
+/scripts/bash/.claude.json
+#/scripts/bash/.bashrc.local
+
+/scripts/powershell/utils/wip/
