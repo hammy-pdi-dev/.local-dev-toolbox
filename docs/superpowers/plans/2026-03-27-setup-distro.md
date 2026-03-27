@@ -1,0 +1,1218 @@
+# setup-distro.sh Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Rewrite `scripts/bash/setup-distro.sh` as an idempotent, cross-platform dev environment bootstrap script with category-based installation, skip-if-exists guards, and upgrade support.
+
+**Architecture:** Single self-contained bash script following `_update-repos.sh` conventions. A `pkg` abstraction layer routes installs to brew/apt based on detected platform. Eight category functions each install their tools independently. Argument parsing supports `--all` (default), `--only=<csv>`, `--skip=<csv>`, and `--upgrade`.
+
+**Tech Stack:** Bash (macOS + Debian/Ubuntu), Homebrew, apt, curl-based installers
+
+**Spec:** `docs/superpowers/specs/2026-03-27-setup-distro-design.md`
+
+---
+
+### Task 1: Shebang, strict mode, colours, symbols, and formatting helpers
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Write the shebang, strict mode, colour codes, and symbols**
+
+Replace the entire contents of `scripts/bash/setup-distro.sh` with:
+
+```bash
+#!/usr/bin/env bash
+# setup-distro.sh — Cross-platform dev environment bootstrap (macOS + Debian/Ubuntu)
+# Idempotent: skips tools already installed unless --upgrade is set.
+set -euo pipefail
+
+# -------------------------------------------------------------------------
+# Status symbols (Unicode)
+SYM_SUCCESS=$'\u2705'           # ✅
+SYM_FAILED=$'\U0001F534'        # 🔴
+SYM_SKIPPED=$'\u23ED\uFE0F'     # ⏭️
+SYM_STEP=$'\u25B6\uFE0F'        # ▶️
+SYM_WARNING=$'\u26A0\uFE0F'     # ⚠️
+
+# ANSI colour codes
+C_RESET=$'\033[0m'
+C_RED=$'\033[31m'
+C_GREEN=$'\033[32m'
+C_YELLOW=$'\033[33m'
+C_CYAN=$'\033[36m'
+C_WHITE=$'\033[37m'
+C_BRIGHT_GREEN=$'\033[92m'
+C_BRIGHT_CYAN=$'\033[96m'
+```
+
+- [ ] **Step 2: Add formatting helpers**
+
+Append directly after the colour codes:
+
+```bash
+# -------------------------------------------------------------------------
+# Formatting helpers
+# -------------------------------------------------------------------------
+
+fmt() {
+    local text="$1" color="${2:-white}"
+    case "$color" in
+        red)          printf '%s%s%s' "$C_RED"          "$text" "$C_RESET" ;;
+        green)        printf '%s%s%s' "$C_GREEN"        "$text" "$C_RESET" ;;
+        yellow)       printf '%s%s%s' "$C_YELLOW"       "$text" "$C_RESET" ;;
+        cyan)         printf '%s%s%s' "$C_CYAN"         "$text" "$C_RESET" ;;
+        bright_green) printf '%s%s%s' "$C_BRIGHT_GREEN" "$text" "$C_RESET" ;;
+        bright_cyan)  printf '%s%s%s' "$C_BRIGHT_CYAN"  "$text" "$C_RESET" ;;
+        *)            printf '%s%s%s' "$C_WHITE"        "$text" "$C_RESET" ;;
+    esac
+}
+
+msg() {
+    local text="$1" color="${2:-white}" newline="${3:-true}"
+    if [[ "$newline" == "true" ]]; then
+        fmt "$text" "$color"
+        printf '\n'
+    else
+        fmt "$text" "$color"
+    fi
+}
+
+warn() { printf '%sWARNING: %s%s\n' "$C_YELLOW" "$1" "$C_RESET" >&2; }
+err()  { printf '%sERROR: %s%s\n'   "$C_RED"    "$1" "$C_RESET" >&2; }
+
+step()    { msg "$SYM_STEP $1" "cyan"; }
+success() { msg "  $SYM_SUCCESS $1" "green"; }
+failure() { msg "  $SYM_FAILED $1" "red"; }
+skipped() { msg "  $SYM_SKIPPED $1" "yellow"; }
+```
+
+- [ ] **Step 3: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added shebang, colours, symbols, and formatting helpers"
+```
+
+---
+
+### Task 2: Platform detection and package manager abstraction
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add platform detection functions**
+
+Append after the formatting helpers:
+
+```bash
+# -------------------------------------------------------------------------
+# Platform detection (get_distro extended from .bashrc to include macOS)
+# -------------------------------------------------------------------------
+
+PLATFORM=""
+PKG_MANAGER=""
+
+get_distro() {
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        echo "macos"
+        return
+    fi
+
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        case "$ID" in
+            ubuntu|debian|mint)                 echo "debian" ;;
+            fedora|rhel|centos|rocky|almalinux) echo "redhat" ;;
+            arch|manjaro|endeavouros)           echo "arch" ;;
+            opensuse*|sles)                     echo "suse" ;;
+            *)                                  echo "unknown" ;;
+        esac
+    else
+        echo "unknown"
+    fi
+}
+
+detect_platform() {
+    local distro
+    distro=$(get_distro)
+
+    case "$distro" in
+        macos)
+            PLATFORM="macos"
+            PKG_MANAGER="brew"
+            # Install Homebrew if missing
+            if ! command -v brew >/dev/null 2>&1; then
+                step "Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null)"
+                success "Homebrew (installed)"
+            fi
+            ;;
+        debian)
+            PLATFORM="debian"
+            PKG_MANAGER="apt"
+            ;;
+        *)
+            err "Unsupported platform: $distro. Only macOS and Debian/Ubuntu are supported."
+            exit 1
+            ;;
+    esac
+}
+```
+
+- [ ] **Step 2: Add the extract helper (from .bashrc)**
+
+Append after `detect_platform`:
+
+```bash
+# Archive extraction helper (from .bashrc)
+extract() {
+    for file in "$@"; do
+        if [[ -f "$file" ]]; then
+            case "$file" in
+                *.tar.bz2) tar xjf "$file" ;;
+                *.tar.gz)  tar xzf "$file" ;;
+                *.tar.xz)  tar xJf "$file" ;;
+                *.bz2)     bunzip2 "$file" ;;
+                *.gz)      gunzip "$file" ;;
+                *.tar)     tar xf "$file" ;;
+                *.tbz2)    tar xjf "$file" ;;
+                *.tgz)     tar xzf "$file" ;;
+                *.zip)     unzip -o "$file" ;;
+                *.7z)      7z x "$file" ;;
+                *)         warn "Unknown archive format: $file" ;;
+            esac
+        else
+            warn "File not found: $file"
+        fi
+    done
+}
+```
+
+- [ ] **Step 3: Add package manager abstraction layer**
+
+Append after `extract`:
+
+```bash
+# -------------------------------------------------------------------------
+# Package manager abstraction
+# -------------------------------------------------------------------------
+
+# Translate package names across platforms
+pkg_name() {
+    local name="$1"
+    if [[ "$PKG_MANAGER" == "brew" ]]; then
+        case "$name" in
+            build-essential)      echo "" ;;
+            python3-pip)          echo "" ;;
+            python3-venv)         echo "" ;;
+            python3-certbot-nginx) echo "" ;;
+            fd-find)              echo "fd" ;;
+            *)                    echo "$name" ;;
+        esac
+    else
+        echo "$name"
+    fi
+}
+
+# Install one or more packages via the detected package manager
+pkg_install() {
+    local resolved=()
+    for name in "$@"; do
+        local translated
+        translated=$(pkg_name "$name")
+        [[ -n "$translated" ]] && resolved+=("$translated")
+    done
+
+    [[ ${#resolved[@]} -eq 0 ]] && return 0
+
+    case "$PKG_MANAGER" in
+        brew) brew install "${resolved[@]}" ;;
+        apt)  sudo apt install -y "${resolved[@]}" ;;
+    esac
+}
+
+# Refresh package index
+pkg_update() {
+    case "$PKG_MANAGER" in
+        brew) brew update ;;
+        apt)  sudo apt update ;;
+    esac
+}
+
+# Upgrade specific packages
+pkg_upgrade() {
+    local resolved=()
+    for name in "$@"; do
+        local translated
+        translated=$(pkg_name "$name")
+        [[ -n "$translated" ]] && resolved+=("$translated")
+    done
+
+    [[ ${#resolved[@]} -eq 0 ]] && return 0
+
+    case "$PKG_MANAGER" in
+        brew) brew upgrade "${resolved[@]}" 2>/dev/null || true ;;
+        apt)  sudo apt install --only-upgrade -y "${resolved[@]}" ;;
+    esac
+}
+
+# Check if a command exists on PATH
+cmd_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Install via curl | bash pattern
+curl_install() {
+    local url="$1"
+    shift
+    curl -fsSL "$url" | bash "$@"
+}
+
+# Guard: skip if command exists and --upgrade is not set
+needs_install() {
+    local cmd="$1"
+    if cmd_exists "$cmd" && [[ "$UPGRADE" == "false" ]]; then
+        return 1
+    fi
+    return 0
+}
+```
+
+- [ ] **Step 4: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added platform detection and package manager abstraction"
+```
+
+---
+
+### Task 3: Argument parsing and show_usage
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add global state variables and category list**
+
+Append after the package manager abstraction:
+
+```bash
+# -------------------------------------------------------------------------
+# Configuration
+# -------------------------------------------------------------------------
+
+ALL_CATEGORIES="core cli shell languages cloud web containers powershell"
+UPGRADE=false
+ONLY_CATEGORIES=""
+SKIP_CATEGORIES=""
+INVALID_ARGS=()
+```
+
+- [ ] **Step 2: Add argument parsing and usage**
+
+Append after the configuration section:
+
+```bash
+# -------------------------------------------------------------------------
+# Argument parsing
+# -------------------------------------------------------------------------
+
+show_usage() {
+    cat <<'EOF'
+Usage: setup-distro.sh [OPTIONS]
+
+Cross-platform dev environment bootstrap (macOS + Debian/Ubuntu).
+
+Options:
+  --all                Install all categories (default)
+  --only=<csv>         Install only these categories (e.g. --only=core,cli)
+  --skip=<csv>         Skip these categories (e.g. --skip=cloud,containers)
+  --upgrade            Re-install/upgrade tools even if already present
+  --help               Show this help message
+
+Categories: core, cli, shell, languages, cloud, web, containers, powershell
+EOF
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        local arg="$1"
+        local name="" value=""
+
+        # Handle --key=value syntax
+        if [[ "$arg" =~ ^(--?[^=]+)=(.+)$ ]]; then
+            name="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+        else
+            name="$arg"
+        fi
+
+        # Normalise: strip leading dashes, lowercase
+        local normalised
+        normalised="$(printf '%s' "$name" | sed 's/^-*//' | tr '[:upper:]' '[:lower:]')"
+
+        case "$normalised" in
+            all)      ;;  # default behaviour, no-op
+            only)
+                if [[ -z "$value" ]]; then
+                    if [[ $# -ge 2 ]]; then shift; value="$1"; else INVALID_ARGS+=("$arg"); shift; continue; fi
+                fi
+                ONLY_CATEGORIES="$value"
+                ;;
+            skip)
+                if [[ -z "$value" ]]; then
+                    if [[ $# -ge 2 ]]; then shift; value="$1"; else INVALID_ARGS+=("$arg"); shift; continue; fi
+                fi
+                SKIP_CATEGORIES="$value"
+                ;;
+            upgrade)  UPGRADE=true ;;
+            help)     show_usage; exit 0 ;;
+            *)        INVALID_ARGS+=("$arg") ;;
+        esac
+        shift
+    done
+
+    # Validate mutual exclusivity
+    if [[ -n "$ONLY_CATEGORIES" && -n "$SKIP_CATEGORIES" ]]; then
+        err "--only and --skip are mutually exclusive."
+        exit 2
+    fi
+}
+
+# Check whether a category should run
+should_run_category() {
+    local category="$1"
+
+    if [[ -n "$ONLY_CATEGORIES" ]]; then
+        [[ ",$ONLY_CATEGORIES," == *",$category,"* ]]
+        return
+    fi
+
+    if [[ -n "$SKIP_CATEGORIES" ]]; then
+        [[ ",$SKIP_CATEGORIES," != *",$category,"* ]]
+        return
+    fi
+
+    return 0
+}
+```
+
+- [ ] **Step 3: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added argument parsing, show_usage, and category filtering"
+```
+
+---
+
+### Task 4: install_core category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_gitleaks helper and install_core function**
+
+Append after the argument parsing section:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: core
+# -------------------------------------------------------------------------
+
+install_gitleaks() {
+    if ! needs_install gitleaks; then
+        success "gitleaks (already installed)"
+        return
+    fi
+
+    local os arch url tmpdir
+    os="$(uname -s)"
+    arch="$(uname -m)"
+
+    case "$os" in
+        Darwin) os="darwin" ;;
+        Linux)  os="linux" ;;
+        *)      failure "gitleaks — unsupported OS: $os"; return ;;
+    esac
+
+    case "$arch" in
+        x86_64)  arch="x64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        *)       failure "gitleaks — unsupported arch: $arch"; return ;;
+    esac
+
+    # Fetch latest release tag from GitHub API
+    local latest_tag
+    latest_tag=$(curl -fsSL "https://api.github.com/repos/gitleaks/gitleaks/releases/latest" \
+        | grep '"tag_name"' | head -1 | sed 's/.*"v\([^"]*\)".*/\1/')
+
+    if [[ -z "$latest_tag" ]]; then
+        failure "gitleaks — could not determine latest version"
+        return
+    fi
+
+    url="https://github.com/gitleaks/gitleaks/releases/download/v${latest_tag}/gitleaks_${latest_tag}_${os}_${arch}.tar.gz"
+    tmpdir=$(mktemp -d)
+
+    if curl -fsSL "$url" -o "${tmpdir}/gitleaks.tar.gz" && \
+       tar xzf "${tmpdir}/gitleaks.tar.gz" -C "$tmpdir" && \
+       sudo install -m 755 "${tmpdir}/gitleaks" /usr/local/bin/gitleaks; then
+        success "gitleaks v${latest_tag} (installed)"
+    else
+        failure "gitleaks (failed)"
+    fi
+
+    rm -rf "$tmpdir"
+}
+
+install_core() {
+    step "Installing core tools..."
+
+    local tools=(curl wget git unzip build-essential)
+    for tool in "${tools[@]}"; do
+        local cmd="$tool"
+        [[ "$tool" == "build-essential" ]] && cmd="gcc"
+
+        if ! needs_install "$cmd"; then
+            success "$tool (already installed)"
+            continue
+        fi
+
+        if pkg_install "$tool" 2>/dev/null; then
+            success "$tool (installed)"
+        else
+            failure "$tool (failed)"
+        fi
+    done
+
+    install_gitleaks
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_core category (curl, wget, git, unzip, gitleaks)"
+```
+
+---
+
+### Task 5: install_cli category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_cli function**
+
+Append after `install_core`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: cli
+# -------------------------------------------------------------------------
+
+install_cli() {
+    step "Installing CLI tools..."
+
+    local tools=(bat ripgrep fzf zoxide fastfetch htop)
+    for tool in "${tools[@]}"; do
+        local cmd="$tool"
+        [[ "$tool" == "ripgrep" ]] && cmd="rg"
+
+        if ! needs_install "$cmd"; then
+            success "$tool (already installed)"
+            continue
+        fi
+
+        if pkg_install "$tool" 2>/dev/null; then
+            success "$tool (installed)"
+        else
+            failure "$tool (failed)"
+        fi
+    done
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_cli category (bat, ripgrep, fzf, zoxide, fastfetch, htop)"
+```
+
+---
+
+### Task 6: install_shell category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_shell function**
+
+Append after `install_cli`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: shell
+# -------------------------------------------------------------------------
+
+install_nerd_font() {
+    local font_name="FiraCode"
+    local font_dir
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew list --cask "font-fira-code-nerd-font" >/dev/null 2>&1 && [[ "$UPGRADE" == "false" ]]; then
+            success "Nerd Font $font_name (already installed)"
+            return
+        fi
+
+        brew tap homebrew/cask-fonts 2>/dev/null || true
+        if brew install --cask "font-fira-code-nerd-font" 2>/dev/null; then
+            success "Nerd Font $font_name (installed)"
+        else
+            failure "Nerd Font $font_name (failed)"
+        fi
+        return
+    fi
+
+    # Linux: download to ~/.local/share/fonts
+    font_dir="$HOME/.local/share/fonts/NerdFonts"
+    if [[ -d "$font_dir" && "$(ls -A "$font_dir" 2>/dev/null)" ]] && [[ "$UPGRADE" == "false" ]]; then
+        success "Nerd Font $font_name (already installed)"
+        return
+    fi
+
+    local tmpdir latest_tag url
+    latest_tag=$(curl -fsSL "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" \
+        | grep '"tag_name"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+
+    if [[ -z "$latest_tag" ]]; then
+        failure "Nerd Font $font_name — could not determine latest version"
+        return
+    fi
+
+    url="https://github.com/ryanoasis/nerd-fonts/releases/download/${latest_tag}/${font_name}.zip"
+    tmpdir=$(mktemp -d)
+
+    if curl -fsSL "$url" -o "${tmpdir}/${font_name}.zip"; then
+        mkdir -p "$font_dir"
+        unzip -o "${tmpdir}/${font_name}.zip" -d "$font_dir" >/dev/null
+        fc-cache -f "$font_dir" 2>/dev/null || true
+        success "Nerd Font $font_name $latest_tag (installed)"
+    else
+        failure "Nerd Font $font_name (failed)"
+    fi
+
+    rm -rf "$tmpdir"
+}
+
+install_shell() {
+    step "Installing shell enhancements..."
+
+    # Starship prompt
+    if ! needs_install starship; then
+        success "starship (already installed)"
+    else
+        if curl -fsSL https://starship.rs/install.sh | sh -s -- -y >/dev/null 2>&1; then
+            success "starship (installed)"
+        else
+            failure "starship (failed)"
+        fi
+    fi
+
+    # Nerd Font
+    install_nerd_font
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_shell category (starship, nerd-fonts)"
+```
+
+---
+
+### Task 7: install_languages category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_languages function**
+
+Append after `install_shell`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: languages
+# -------------------------------------------------------------------------
+
+install_languages() {
+    step "Installing language runtimes..."
+
+    # NVM + Node LTS
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    if [[ -s "$NVM_DIR/nvm.sh" ]] && [[ "$UPGRADE" == "false" ]]; then
+        success "nvm (already installed)"
+    else
+        if curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash >/dev/null 2>&1; then
+            success "nvm (installed)"
+        else
+            failure "nvm (failed)"
+        fi
+    fi
+
+    # Source nvm so we can install node
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+
+    if cmd_exists node && [[ "$UPGRADE" == "false" ]]; then
+        success "node LTS (already installed — $(node --version))"
+    else
+        if cmd_exists nvm; then
+            if nvm install --lts >/dev/null 2>&1; then
+                success "node LTS (installed — $(node --version))"
+            else
+                failure "node LTS (failed)"
+            fi
+        else
+            skipped "node LTS (skipped — nvm not available)"
+        fi
+    fi
+
+    # Python3 + pip
+    if cmd_exists python3 && [[ "$UPGRADE" == "false" ]]; then
+        success "python3 (already installed — $(python3 --version))"
+    else
+        if pkg_install python3 python3-pip python3-venv 2>/dev/null; then
+            success "python3 + pip (installed)"
+        else
+            failure "python3 (failed)"
+        fi
+    fi
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_languages category (nvm, node LTS, python3, pip)"
+```
+
+---
+
+### Task 8: install_cloud category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_cloud function**
+
+Append after `install_languages`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: cloud
+# -------------------------------------------------------------------------
+
+install_awscli() {
+    if ! needs_install aws; then
+        success "aws-cli (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if pkg_install awscli 2>/dev/null; then
+            success "aws-cli (installed)"
+        else
+            failure "aws-cli (failed)"
+        fi
+        return
+    fi
+
+    # Linux: official installer
+    local tmpdir
+    tmpdir=$(mktemp -d)
+
+    if curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "${tmpdir}/awscliv2.zip" && \
+       unzip -o "${tmpdir}/awscliv2.zip" -d "$tmpdir" >/dev/null && \
+       sudo "${tmpdir}/aws/install" --update >/dev/null 2>&1; then
+        success "aws-cli v2 (installed)"
+    else
+        failure "aws-cli (failed)"
+    fi
+
+    rm -rf "$tmpdir"
+}
+
+install_azure_cli() {
+    if ! needs_install az; then
+        success "azure-cli (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if pkg_install azure-cli 2>/dev/null; then
+            success "azure-cli (installed)"
+        else
+            failure "azure-cli (failed)"
+        fi
+        return
+    fi
+
+    # Linux: Microsoft install script
+    if curl -fsSL https://aka.ms/InstallAzureCLIDeb | sudo bash >/dev/null 2>&1; then
+        success "azure-cli (installed)"
+    else
+        failure "azure-cli (failed)"
+    fi
+}
+
+install_wrangler() {
+    if ! needs_install wrangler; then
+        success "wrangler (already installed)"
+        return
+    fi
+
+    if ! cmd_exists npm; then
+        skipped "wrangler (skipped — npm not available, install languages category first)"
+        return
+    fi
+
+    if npm install -g wrangler >/dev/null 2>&1; then
+        success "wrangler (installed)"
+    else
+        failure "wrangler (failed)"
+    fi
+}
+
+install_cloud() {
+    step "Installing cloud CLIs..."
+    install_awscli
+    install_azure_cli
+    install_wrangler
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_cloud category (aws-cli, azure-cli, wrangler)"
+```
+
+---
+
+### Task 9: install_web category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_web function**
+
+Append after `install_cloud`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: web
+# -------------------------------------------------------------------------
+
+install_web() {
+    step "Installing web server tools..."
+
+    # nginx
+    if ! needs_install nginx; then
+        success "nginx (already installed)"
+    else
+        if pkg_install nginx 2>/dev/null; then
+            success "nginx (installed)"
+        else
+            failure "nginx (failed)"
+        fi
+    fi
+
+    # certbot
+    if ! needs_install certbot; then
+        success "certbot (already installed)"
+    else
+        if [[ "$PLATFORM" == "debian" ]]; then
+            if pkg_install certbot python3-certbot-nginx 2>/dev/null; then
+                success "certbot (installed)"
+            else
+                failure "certbot (failed)"
+            fi
+        else
+            if pkg_install certbot 2>/dev/null; then
+                success "certbot (installed)"
+            else
+                failure "certbot (failed)"
+            fi
+        fi
+    fi
+
+    # mkcert
+    if ! needs_install mkcert; then
+        success "mkcert (already installed)"
+    else
+        if pkg_install mkcert 2>/dev/null; then
+            success "mkcert (installed)"
+        else
+            failure "mkcert (failed)"
+        fi
+    fi
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_web category (nginx, certbot, mkcert)"
+```
+
+---
+
+### Task 10: install_containers category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_containers function**
+
+Append after `install_web`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: containers
+# -------------------------------------------------------------------------
+
+install_containers() {
+    step "Installing container tools..."
+
+    if ! needs_install docker; then
+        success "docker (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew install --cask docker 2>/dev/null; then
+            success "docker desktop (installed)"
+        else
+            failure "docker (failed)"
+        fi
+        return
+    fi
+
+    # Linux: official install script
+    if curl -fsSL https://get.docker.com | sudo sh >/dev/null 2>&1; then
+        # Add current user to docker group
+        sudo usermod -aG docker "$USER" 2>/dev/null || true
+        success "docker + compose (installed — log out and back in for group changes)"
+    else
+        failure "docker (failed)"
+    fi
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_containers category (docker + compose)"
+```
+
+---
+
+### Task 11: install_powershell category
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add install_powershell function**
+
+Append after `install_containers`:
+
+```bash
+# -------------------------------------------------------------------------
+# Category: powershell
+# -------------------------------------------------------------------------
+
+install_powershell() {
+    step "Installing PowerShell..."
+
+    if ! needs_install pwsh; then
+        success "powershell (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew install --cask powershell 2>/dev/null; then
+            success "powershell (installed)"
+        else
+            failure "powershell (failed)"
+        fi
+        return
+    fi
+
+    # Debian/Ubuntu: Microsoft package repo
+    if ! [[ -f /etc/apt/sources.list.d/microsoft-prod.list ]] && \
+       ! [[ -f /etc/apt/sources.list.d/microsoft.list ]]; then
+        local release_id release_version deb_url
+        source /etc/os-release
+        release_id="${ID}"
+        release_version="${VERSION_ID}"
+
+        # Use Ubuntu repo for Ubuntu, Debian repo for Debian
+        deb_url="https://packages.microsoft.com/config/${release_id}/${release_version}/packages-microsoft-prod.deb"
+
+        local tmpdir
+        tmpdir=$(mktemp -d)
+        if curl -fsSL "$deb_url" -o "${tmpdir}/packages-microsoft-prod.deb"; then
+            sudo dpkg -i "${tmpdir}/packages-microsoft-prod.deb" >/dev/null 2>&1
+            sudo apt update >/dev/null 2>&1
+        fi
+        rm -rf "$tmpdir"
+    fi
+
+    if sudo apt install -y powershell 2>/dev/null; then
+        success "powershell (installed)"
+    else
+        failure "powershell (failed)"
+    fi
+}
+```
+
+- [ ] **Step 2: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added install_powershell category (pwsh via Microsoft repo)"
+```
+
+---
+
+### Task 12: Main function, entry point, and summary
+
+**Files:**
+- Modify: `scripts/bash/setup-distro.sh`
+
+- [ ] **Step 1: Add summary tracking and main function**
+
+Append after `install_powershell`:
+
+```bash
+# -------------------------------------------------------------------------
+# Main
+# -------------------------------------------------------------------------
+
+main() {
+    detect_platform
+    msg "Platform: $PLATFORM ($PKG_MANAGER)" "bright_cyan"
+    printf '\n'
+
+    # Update package index
+    if [[ "$UPGRADE" == "true" ]]; then
+        step "Updating package index..."
+        pkg_update >/dev/null 2>&1
+        success "Package index updated"
+        printf '\n'
+    fi
+
+    # Run categories in dependency order
+    local categories=(core cli shell languages cloud web containers powershell)
+    local ran=0
+
+    for category in "${categories[@]}"; do
+        if should_run_category "$category"; then
+            "install_${category}"
+            printf '\n'
+            ((ran++)) || true
+        fi
+    done
+
+    if [[ $ran -eq 0 ]]; then
+        warn "No categories selected. Run with --help for usage."
+        exit 0
+    fi
+
+    msg "$SYM_SUCCESS Setup complete." "bright_green"
+}
+```
+
+- [ ] **Step 2: Add entry point**
+
+Append after `main`:
+
+```bash
+# -------------------------------------------------------------------------
+# Entry point
+# -------------------------------------------------------------------------
+
+parse_args "$@"
+
+if [[ ${#INVALID_ARGS[@]} -gt 0 ]]; then
+    msg "Unrecognised option(s):" "red"
+    for arg in "${INVALID_ARGS[@]}"; do
+        msg "  $arg" "red"
+    done
+    show_usage
+    exit 2
+fi
+
+main
+```
+
+- [ ] **Step 3: Syntax check**
+
+Run: `bash -n scripts/bash/setup-distro.sh`
+Expected: no output (clean parse)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add scripts/bash/setup-distro.sh
+git commit -m "Added main orchestrator, entry point, and summary output"
+```
+
+---
+
+### Task 13: Documentation
+
+**Files:**
+- Create: `.docs/scripts/bash/setup-distro.md`
+
+- [ ] **Step 1: Write the documentation file**
+
+Create `.docs/scripts/bash/setup-distro.md`:
+
+```markdown
+# setup-distro.sh
+
+Cross-platform dev environment bootstrap script for macOS and Debian/Ubuntu (including WSL).
+
+## Usage
+
+```bash
+# Install everything (default)
+bash scripts/bash/setup-distro.sh
+
+# Install only specific categories
+bash scripts/bash/setup-distro.sh --only=core,cli,shell
+
+# Skip categories
+bash scripts/bash/setup-distro.sh --skip=cloud,containers
+
+# Upgrade existing tools
+bash scripts/bash/setup-distro.sh --upgrade
+
+# Combine flags
+bash scripts/bash/setup-distro.sh --only=core,cli --upgrade
+```
+
+## Categories
+
+| Category | Flag | Tools |
+|---|---|---|
+| core | `--only=core` | curl, wget, git, unzip, build-essential, gitleaks |
+| cli | `--only=cli` | bat, ripgrep, fzf, zoxide, fastfetch, htop |
+| shell | `--only=shell` | starship, Nerd Font (FiraCode) |
+| languages | `--only=languages` | nvm + Node LTS, python3 + pip |
+| cloud | `--only=cloud` | aws-cli v2, azure-cli, wrangler (Cloudflare) |
+| web | `--only=web` | nginx, certbot + nginx plugin, mkcert |
+| containers | `--only=containers` | docker + docker compose |
+| powershell | `--only=powershell` | pwsh (Microsoft package repo) |
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--all` | Install all categories (default) |
+| `--only=<csv>` | Install only listed categories |
+| `--skip=<csv>` | Skip listed categories |
+| `--upgrade` | Re-install/upgrade tools even if present |
+| `--help` | Show usage |
+
+`--only` and `--skip` are mutually exclusive.
+
+## Platform Support
+
+- **macOS**: Uses Homebrew (installed automatically if missing)
+- **Debian/Ubuntu (including WSL)**: Uses apt + curl-based installers
+
+## Behaviour
+
+- **Idempotent**: skips tools already on PATH unless `--upgrade` is set
+- **Non-fatal tool failures**: individual tool failures print a warning; script continues
+- **Dependency order**: core runs first (curl/git needed by later installers), languages before cloud (npm needed for wrangler)
+
+## Dependencies Between Categories
+
+- **cloud** depends on **languages** for wrangler (npm). If Node is not installed and languages is skipped, wrangler is skipped with a warning.
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .docs/scripts/bash/setup-distro.md
+git commit -m "Added setup-distro.sh documentation"
+```
