@@ -19,6 +19,6 @@
 *.old
 
 /scripts/bash/.claude.json
-#/scripts/bash/.bashrc.local
+/scripts/bash/.bashrc.local
 
 /scripts/powershell/utils/wip/
