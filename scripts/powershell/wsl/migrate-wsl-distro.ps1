@@ -126,3 +126,145 @@ function Write-Usage
     Write-Host '  --skip-export     Skip export, use existing tar'
     Write-Host '  --help            Show this help'
 }
+
+function Test-DistroExists ([string]$distroName)
+{
+    $distros = wsl --list --quiet 2>$null
+    if (-not $distros) { return $false }
+
+    # wsl --list outputs UTF-16LE with possible null chars — clean up
+    $cleaned = $distros | ForEach-Object { $_.Trim("`0", ' ', "`r", "`n") } | Where-Object { $_ -ne '' }
+    return $cleaned -contains $distroName
+}
+
+function Main ([string]$sourceDistro, [string]$versionTag, [string]$distroName,
+               [string]$backupPath, [string]$installPath, [string]$defaultUser,
+               [switch]$skipUnregister, [switch]$skipExport)
+{
+    # Derive distro name if not provided — strip trailing version pattern (e.g. -24.04, -22.04)
+    if (-not $distroName) {
+        $distroName = $sourceDistro -replace '-?\d+\.\d+$', ''
+    }
+
+    $targetName = "$distroName-$versionTag"
+    $tarFile    = Join-Path $backupPath "$targetName-base.tar"
+
+    if (-not $installPath) {
+        $installPath = Join-Path $Script:DefaultInstallRoot $targetName
+    }
+
+    Write-Host ''
+    Write-Message "Migration: $sourceDistro -> $targetName" 'BrightCyan'
+    Write-Message "  Backup:  $tarFile" 'White'
+    Write-Message "  Install: $installPath" 'White'
+    Write-Message "  User:    $defaultUser" 'White'
+    Write-Host ''
+
+    # 1. Validate source distro
+    Write-Step "Validating source distro '$sourceDistro'..."
+    if (-not (Test-DistroExists $sourceDistro)) {
+        Exit-WithError "Source distro '$sourceDistro' not found. Run 'wsl --list' to see available distros."
+        return
+    }
+    Write-Success "Source distro '$sourceDistro' found"
+
+    # 2. Export
+    if (-not $skipExport) {
+        Write-Step "Exporting '$sourceDistro' to '$tarFile'..."
+        if (-not (Test-Path $backupPath)) {
+            New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
+        }
+        wsl --export $sourceDistro $tarFile
+        if ($LASTEXITCODE -ne 0) {
+            Exit-WithError "Export failed (exit code: $LASTEXITCODE)"
+            return
+        }
+        Write-Success "Export complete"
+    }
+    else {
+        Write-Step "Skipping export (--skip-export)"
+        if (-not (Test-Path $tarFile)) {
+            Exit-WithError "Tar file not found at '$tarFile'. Cannot import without export."
+            return
+        }
+        Write-Success "Using existing tar: $tarFile"
+    }
+
+    # 3. Import
+    Write-Step "Importing '$targetName' to '$installPath'..."
+    if (Test-DistroExists $targetName) {
+        Exit-WithError "Target distro '$targetName' already exists. Unregister it first or choose a different version tag."
+        return
+    }
+    wsl --import $targetName $installPath $tarFile
+    if ($LASTEXITCODE -ne 0) {
+        Exit-WithError "Import failed (exit code: $LASTEXITCODE)"
+        return
+    }
+    Write-Success "Import complete"
+
+    # 4. Configure default user
+    Write-Step "Setting default user to '$defaultUser'..."
+    wsl -d $targetName -- bash -c "echo -e '[user]\ndefault=$defaultUser' | tee /etc/wsl.conf"
+    if ($LASTEXITCODE -ne 0) {
+        Exit-WithError "Failed to configure default user (exit code: $LASTEXITCODE)"
+        return
+    }
+    Write-Success "Default user configured"
+
+    # 5. Unregister original
+    if (-not $skipUnregister) {
+        Write-Step "Unregistering original distro '$sourceDistro'..."
+        wsl --unregister $sourceDistro
+        if ($LASTEXITCODE -ne 0) {
+            Exit-WithError "Unregister failed (exit code: $LASTEXITCODE)"
+            return
+        }
+        Write-Success "Original distro '$sourceDistro' unregistered"
+    }
+    else {
+        Write-Step "Skipping unregister (--skip-unregister)"
+    }
+
+    # 6. Terminate and verify
+    Write-Step "Terminating '$targetName' to apply config..."
+    wsl --terminate $targetName 2>$null
+    Write-Success "Terminated"
+
+    Write-Host ''
+    Write-Message "$($Script:Symbols.Success) Migration complete: $targetName" 'BrightGreen'
+    Write-Host ''
+    Write-Step 'Current WSL distros:'
+    wsl --list --verbose
+}
+
+# -------------------------------------------------------------------------
+# Entry point
+# -------------------------------------------------------------------------
+$parsedArgs = Get-ParsedArguments -argList $args
+
+if ($parsedArgs.Invalid.Count -gt 0) {
+    Write-Message 'Unrecognised option(s):' 'Red'
+    $parsedArgs.Invalid | ForEach-Object { Write-Message "  $_" 'Red' }
+    Write-Host ''
+    Write-Usage
+    $global:LASTEXITCODE = 2
+    return
+}
+
+if (-not $parsedArgs.SourceDistro -or -not $parsedArgs.VersionTag) {
+    Write-Message 'Missing required parameters.' 'Red'
+    Write-Host ''
+    Write-Usage
+    $global:LASTEXITCODE = 2
+    return
+}
+
+Main -sourceDistro $parsedArgs.SourceDistro `
+     -versionTag $parsedArgs.VersionTag `
+     -distroName $parsedArgs.DistroName `
+     -backupPath $parsedArgs.BackupPath `
+     -installPath $parsedArgs.InstallPath `
+     -defaultUser $parsedArgs.DefaultUser `
+     -skipUnregister:$parsedArgs.SkipUnregister `
+     -skipExport:$parsedArgs.SkipExport
