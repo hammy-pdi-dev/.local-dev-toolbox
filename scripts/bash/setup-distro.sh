@@ -337,6 +337,7 @@ install_gitleaks() {
 
     url="https://github.com/gitleaks/gitleaks/releases/download/v${latest_tag}/gitleaks_${latest_tag}_${os}_${arch}.tar.gz"
     tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' RETURN
 
     if curl -fsSL "$url" -o "${tmpdir}/gitleaks.tar.gz" && \
        tar xzf "${tmpdir}/gitleaks.tar.gz" -C "$tmpdir" && \
@@ -345,8 +346,6 @@ install_gitleaks() {
     else
         failure "gitleaks (failed)"
     fi
-
-    rm -rf "$tmpdir"
 }
 
 install_core() {
@@ -438,6 +437,7 @@ install_nerd_font() {
 
     url="https://github.com/ryanoasis/nerd-fonts/releases/download/${latest_tag}/${font_name}.zip"
     tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' RETURN
 
     if curl -fsSL "$url" -o "${tmpdir}/${font_name}.zip"; then
         mkdir -p "$font_dir"
@@ -447,8 +447,6 @@ install_nerd_font() {
     else
         failure "Nerd Font $font_name (failed)"
     fi
-
-    rm -rf "$tmpdir"
 }
 
 install_shell() {
@@ -539,6 +537,7 @@ install_awscli() {
     # Linux: official installer
     local tmpdir
     tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' RETURN
 
     if curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "${tmpdir}/awscliv2.zip" && \
        unzip -o "${tmpdir}/awscliv2.zip" -d "$tmpdir" >/dev/null && \
@@ -547,8 +546,6 @@ install_awscli() {
     else
         failure "aws-cli (failed)"
     fi
-
-    rm -rf "$tmpdir"
 }
 
 install_azure_cli() {
@@ -713,11 +710,11 @@ install_powershell() {
 
         local tmpdir
         tmpdir=$(mktemp -d)
+        trap 'rm -rf "$tmpdir"' RETURN
         if curl -fsSL "$deb_url" -o "${tmpdir}/packages-microsoft-prod.deb"; then
             sudo dpkg -i "${tmpdir}/packages-microsoft-prod.deb" >/dev/null 2>&1
             sudo apt update >/dev/null 2>&1
         fi
-        rm -rf "$tmpdir"
     fi
 
     if sudo apt install -y powershell 2>/dev/null; then
@@ -737,12 +734,10 @@ main() {
     printf '\n'
 
     # Update package index
-    if [[ "$UPGRADE" == "true" ]]; then
-        step "Updating package index..."
-        pkg_update >/dev/null 2>&1
-        success "Package index updated"
-        printf '\n'
-    fi
+    step "Updating package index..."
+    pkg_update >/dev/null 2>&1
+    success "Package index updated"
+    printf '\n'
 
     # Run categories in dependency order
     local categories=(core cli shell languages cloud web containers powershell)
@@ -769,7 +764,11 @@ main() {
     msg "  Failed:    $COUNT_FAILED" "red"
     printf '\n'
 
-    msg "$SYM_SUCCESS Setup complete." "bright_green"
+    if [[ $COUNT_FAILED -gt 0 ]]; then
+        msg "$SYM_WARNING Setup completed with $COUNT_FAILED failure(s)." "yellow"
+    else
+        msg "$SYM_SUCCESS Setup complete." "bright_green"
+    fi
 }
 
 # -------------------------------------------------------------------------
