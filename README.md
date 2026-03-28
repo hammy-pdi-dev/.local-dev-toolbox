@@ -27,6 +27,13 @@ Detailed documentation for each script lives in `.docs/scripts/`.
 
 Both scripts scan a root directory for child folders matching a configurable prefix, then fetch and pull each repo in parallel (default: 4 workers). Supports `--skip-dirty`, `--stash-dirty`, `--use-rebase`, `--fetch-all-remotes`, and `--verbose`.
 
+### Environment Setup
+
+| Script | Platform | Description | Docs |
+|--------|----------|-------------|------|
+| `scripts/bash/setup-distro.sh` | Linux/macOS | Idempotent dev environment bootstrap — installs dev tools, CLI utilities, shell enhancements, language runtimes, cloud CLIs, web server tooling, containers, and PowerShell | [docs](.docs/scripts/bash/setup-distro.md) |
+| `scripts/powershell/wsl/migrate-wsl-distro.ps1` | Windows | Migrate a WSL distribution to a new location with export/import | [docs](.docs/scripts/powershell/wsl/migrate-wsl-distro.md) |
+
 ### Utilities
 
 | Script | Platform | Description | Docs |
@@ -71,7 +78,13 @@ The pre-commit hook requires gitleaks to be installed. Repository-level configur
 2. Adjust variables (like `$Script:ChildFolderPrefix`) in scripts as needed.
 3. Run a script:
 
-```powershell
+```bash
+# Bootstrap a dev environment (macOS or Debian/Ubuntu)
+bash ./scripts/bash/setup-distro.sh
+
+# Install only specific categories
+bash ./scripts/bash/setup-distro.sh --only=core,cli,languages
+
 # PowerShell — fetch/pull all matching repos
 pwsh ./scripts/powershell/utils/_update-repos.ps1 -root-path D:\Repos --no-pull
 

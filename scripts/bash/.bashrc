@@ -6,7 +6,7 @@
 # Only for interactive shells
 [[ $- != *i* ]] && return
 
-#################### INIT ####################
+# :: INIT ::     
 
 # System defaults and completion
 [[ -f /etc/bashrc ]] && source /etc/bashrc
@@ -23,7 +23,7 @@ elif command -v neofetch >/dev/null 2>&1; then
     neofetch
 fi
 
-#################### SHELL OPTIONS ####################
+# :: SHELL OPTIONS ::     
 
 shopt -s checkwinsize histappend globstar
 bind "set bell-style none" 2>/dev/null
@@ -31,7 +31,7 @@ bind "set completion-ignore-case on" 2>/dev/null
 bind "set show-all-if-ambiguous on" 2>/dev/null
 stty -ixon 2>/dev/null
 
-#################### HISTORY ####################
+# :: HISTORY ::     
 
 export HISTSIZE=10000
 export HISTFILESIZE=20000
@@ -39,7 +39,7 @@ export HISTTIMEFORMAT="%F %T "
 export HISTCONTROL="erasedups:ignoredups:ignorespace"
 export PROMPT_COMMAND="history -a"
 
-#################### ENV ####################
+# :: ENV ::     
 
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -90,7 +90,7 @@ if [[ -f "$HOME/.fzf.bash" ]]; then
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 fi
 
-#################### FUNCTIONS ####################
+# :: FUNCTIONS ::     
 
 # Detect the Linux distribution family (debian, redhat, arch, suse) for distro-aware aliases
 get_distro() {
@@ -240,7 +240,7 @@ if command -v fzf >/dev/null 2>&1; then
     }
 fi
 
-#################### ALIASES ####################
+# :: ALIASES ::     
 
 # Navigation — shorthand for jumping up directories
 alias ..='cd ..'                # up one level
@@ -371,12 +371,12 @@ alias curl='curl -L'                                      # follow redirects aut
 alias ippublic='curl -s https://ifconfig.me'              # show public IP address
 alias serve='python3 -m http.server 8000'                 # quick local HTTP server on port 8000
 
-#################### KEYBINDINGS ####################
+# :: KEYBINDINGS ::     
 
 # Ctrl+F — invoke zoxide interactive (zi) for fuzzy directory jumping
 bind '"\C-f":"zi\n"' 2>/dev/null
 
-#################### PROMPT / ENHANCEMENTS ####################
+# :: PROMPT / ENHANCEMENTS ::     
 
 # Starship — cross-shell customisable prompt (https://starship.rs)
 export STARSHIP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/starship/starship.toml"
@@ -385,7 +385,7 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
 # Zoxide — smarter cd that learns your most-used directories (https://github.com/ajeetdsouza/zoxide)
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 
-#################### EXTERNAL ####################
+# :: EXTERNAL ::     
 
 [[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
@@ -398,7 +398,7 @@ command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 # Bash aliases file (if maintained separately)
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
-#################### LOCAL OVERRIDES ####################
+# :: LOCAL OVERRIDES ::     
 # Personal settings, secrets, API tokens, and machine-specific config.
 # Create ~/.bashrc.local with your own exports:
 #   export AWS_PROFILE=my-profile

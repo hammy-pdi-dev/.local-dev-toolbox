@@ -214,15 +214,7 @@ claude mcp list
 clear
 claude mcp list
 claude mcp add --transport http pdi-salesforce https://mcp-api.platform.pditechnologies.com/v1/salesforce-sse -s user
-cai
 claude --dangerously-skip-permissions
 cai --continue
 cai
-dir
-cai
-1
 clear
-exit
-
-cai --continue
-cai
