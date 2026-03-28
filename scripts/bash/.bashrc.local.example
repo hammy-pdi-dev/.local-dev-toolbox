@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # ~/.bashrc.local - Personal overrides (DO NOT commit secrets to version control)
 #
-# Copy this template and fill in your values:
-#   cp scripts/bash/.bashrc.local.example ~/.bashrc.local
+# Created automatically by setup-distro.sh, or copy manually:
+#   cp "$DEV_TOOLBOX/.bashrc.local.example" ~/.bashrc.local
 #
 # This file is sourced at the end of .bashrc, so anything here takes precedence.
 # It is gitignored and should never be committed.
 
 # :: CLAUDE CODE / AWS BEDROCK ::   
-
 export AWS_PROFILE=pdi-bedrock
 export AWS_REGION=us-east-1
 export AWS_DEFAULT_REGION=us-east-1
@@ -20,39 +19,56 @@ if prompt_continue "Run aws sso login session?"; then
 fi
 
 # :: AZURE DEVOPS ::   
-
 export AZURE_DEVOPS_AUTH_METHOD=pat
 export AZURE_DEVOPS_ORG_URL=https://pdidev.visualstudio.com/PDI
 export AZURE_DEVOPS_PAT=<your-personal-access-token>
 export AZURE_DEVOPS_DEFAULT_PROJECT=PDIDev
 
 # :: ATLASSIAN ::   
-
 export ATLASSIAN_SITE_NAME="pdisoftware"
 export ATLASSIAN_USER_EMAIL="<your-email>@pditechnologies.com"
 export ATLASSIAN_API_TOKEN="<your-api-token>"
 
-# :: MISC ::   
+# :: MISC ::
+# Path to the dev-toolbox bash scripts directory (set by setup-distro.sh)
+export DEV_TOOLBOX="<SET_BY_SETUP_DISTRO>"
+export PATH="$PATH:$DEV_TOOLBOX"
 export HISTSIZE=100
 
-# :: TERMINAL PROMPT ::   
-
-# Starship — cross-shell customisable prompt (https://starship.rs)
-export STARSHIP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/starship/starship.toml"
-command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
-
-# :: PERSONAL ALIASES ::   
-
+# :: PERSONAL ALIASES ::
+# Handy alias to edit your local config quickly
 alias cai="claude --allowedTools --dangerously-skip-permissions --add-dir /.docs/"
-alias cdrec     = "cd \"/mnt/c/Users/<your.username>/Videos/Recordings\""
-alias downloads = "cd \"/mnt/c/users/<your.username>/downloads\""
-alias cdfs      = "cd \"/mnt/d/repos/hydra.opt.service\""
-alias cdslib    = "cd \"/mnt/d/repos/hydra.opt.service/packages\""
-alias cddocs    = "cd \"/mnt/d/repos/hydra.opt.service/.docs\""
-alias cdscripts = "cd \"/mnt/d/repos/.local-dev-toolbox/scripts\""
+alias cdrec="cd \"/mnt/c/Users/hammayo.babar/Videos/Screen Recordings\""
+alias downloads="cd \"/mnt/c/users/hammayo.babar/downloads\""
+alias cdfs="cd \"/mnt/d/repos/hydra.opt.service\""
+alias cdlib="cd \"/mnt/d/repos/hydra.opt.service/packages\""
+alias cdmd="cd \"/mnt/d/repos/hydra.opt.service/.docs\""
+
+alias edit-local="nano ~/.bashrc.local" # edit this file quickly
+alias reload="source ~/.bashrc"         # reload this bashrc without restarting
+alias repos="cd /mnt/d/Repos"           # navigate to repos parent directory  
+
+# Add metadata option to /etc/wsl.conf
+# chmod +x /mnt/d/Repos/.local-dev-toolbox/scripts/bash/*.sh  # make all scripts in directory executable
+alias wsl-enable-metadata='
+  if grep -q "^\[automount\]" /etc/wsl.conf 2>/dev/null; then
+    # [automount] section exists, check if options line is already there
+    if grep -q "^options" /etc/wsl.conf; then
+      echo "options already set in /etc/wsl.conf"
+    else
+      sudo sed -i "/^\[automount\]/a options = \"metadata\"" /etc/wsl.conf
+      echo "Added options = \"metadata\" under [automount]"
+    fi
+  else
+    # Append a new [automount] section
+    echo -e "\n[automount]\noptions = \"metadata\"" | sudo tee -a /etc/wsl.conf
+    echo "Added [automount] section with options = \"metadata\""
+  fi
+'
 
 # :: STARTUP ::   
-
 cdfs
 cls
 git status
+
+

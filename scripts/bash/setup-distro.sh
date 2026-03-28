@@ -206,7 +206,10 @@ needs_install() {
 # Configuration
 # -------------------------------------------------------------------------
 
-ALL_CATEGORIES="core cli shell languages cloud web containers powershell"
+ALL_CATEGORIES="dotfiles core cli shell languages cloud web containers powershell"
+
+# Resolve DEV_TOOLBOX from this script's location
+DEV_TOOLBOX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UPGRADE=false
 ONLY_CATEGORIES=""
 SKIP_CATEGORIES=""
@@ -233,7 +236,7 @@ Options:
   --upgrade            Re-install/upgrade tools even if already present
   --help               Show this help message
 
-Categories: core, cli, shell, languages, cloud, web, containers, powershell
+Categories: dotfiles, core, cli, shell, languages, cloud, web, containers, powershell
 EOF
 }
 
@@ -297,6 +300,56 @@ should_run_category() {
     fi
 
     return 0
+}
+
+# -------------------------------------------------------------------------
+# Category: dotfiles
+# -------------------------------------------------------------------------
+
+link_dotfile() {
+    local src="$1" dest="$2" name
+    name="$(basename "$dest")"
+
+    if [[ -L "$dest" && "$(readlink -f "$dest")" == "$(readlink -f "$src")" ]]; then
+        success "$name (already linked)"
+        return
+    fi
+
+    # Back up existing file if it's not a symlink to our source
+    if [[ -e "$dest" || -L "$dest" ]]; then
+        mv "$dest" "${dest}.bak.$(date +%Y%m%d%H%M%S)"
+        warn "$name — existing file backed up to ${dest}.bak.*"
+    fi
+
+    if ln -sf "$src" "$dest"; then
+        success "$name → $src (linked)"
+    else
+        failure "$name (failed to link)"
+    fi
+}
+
+install_dotfiles() {
+    step "Linking dotfiles from DEV_TOOLBOX..."
+
+    # Symlink shell config files so edits in the toolbox are reflected automatically
+    link_dotfile "$DEV_TOOLBOX/.bashrc"       "$HOME/.bashrc"
+    link_dotfile "$DEV_TOOLBOX/.bash_profile"  "$HOME/.bash_profile"
+
+    # Copy .bashrc.local if it exists in the toolbox (gitignored, user-specific)
+    if [[ -f "$HOME/.bashrc.local" ]]; then
+        success ".bashrc.local (already exists)"
+    elif [[ -f "$DEV_TOOLBOX/.bashrc.local" ]]; then
+        cp "$DEV_TOOLBOX/.bashrc.local" "$HOME/.bashrc.local"
+        success ".bashrc.local (copied from toolbox)"
+    elif [[ -f "$DEV_TOOLBOX/.bashrc.local.example" ]]; then
+        sed "s|<SET_BY_SETUP_DISTRO>|$DEV_TOOLBOX|g" \
+            "$DEV_TOOLBOX/.bashrc.local.example" > "$HOME/.bashrc.local"
+        success ".bashrc.local (created from template — edit with: nano ~/.bashrc.local)"
+    else
+        skipped ".bashrc.local (skipped — no .bashrc.local or template found)"
+    fi
+
+    msg "  DEV_TOOLBOX=$DEV_TOOLBOX" "cyan"
 }
 
 # -------------------------------------------------------------------------
@@ -369,6 +422,30 @@ install_core() {
     done
 
     install_gitleaks
+    install_tailscale
+}
+
+install_tailscale() {
+    if ! needs_install tailscale; then
+        success "tailscale (already installed)"
+        return
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        if brew install --cask tailscale 2>/dev/null; then
+            success "tailscale (installed)"
+        else
+            failure "tailscale (failed)"
+        fi
+        return
+    fi
+
+    # Linux: official install script
+    if curl -fsSL https://tailscale.com/install.sh | sh >/dev/null 2>&1; then
+        success "tailscale (installed)"
+    else
+        failure "tailscale (failed)"
+    fi
 }
 
 # -------------------------------------------------------------------------
@@ -740,7 +817,7 @@ main() {
     printf '\n'
 
     # Run categories in dependency order
-    local categories=(core cli shell languages cloud web containers powershell)
+    local categories=(dotfiles core cli shell languages cloud web containers powershell)
     local ran=0
 
     for category in "${categories[@]}"; do

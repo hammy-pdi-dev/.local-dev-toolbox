@@ -9,5 +9,3 @@ fi
 if [[ -n $BASH && $- == *i* && -f "$HOME/.bashrc" ]]; then
   . "$HOME/.bashrc"
 fi
-
-export PATH=$PATH:/home/dacrab/.spicetify

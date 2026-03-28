@@ -28,3 +28,4 @@
 # Exclude Staging folders 
 /scripts/powershell/sandbox/x_bin/
 /scripts/powershell/utils/wip/
+/scripts/.docs/.obsidian/

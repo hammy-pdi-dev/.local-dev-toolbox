@@ -399,10 +399,6 @@ command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 # :: LOCAL OVERRIDES ::     
-# Personal settings, secrets, API tokens, and machine-specific config.
-# Create ~/.bashrc.local with your own exports:
-#   export AWS_PROFILE=my-profile
-#   export AZURE_DEVOPS_PAT=xxx
-#   export ATLASSIAN_API_TOKEN=xxx
-#   alias cdproject="cd /mnt/d/repos/my-project"
+
+# Personal settings, secrets, API tokens, and machine-specific config
 [[ -f ~/.bashrc.local ]] && . ~/.bashrc.local

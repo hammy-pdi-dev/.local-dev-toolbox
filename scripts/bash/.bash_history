@@ -215,6 +215,10 @@ clear
 claude mcp list
 claude mcp add --transport http pdi-salesforce https://mcp-api.platform.pditechnologies.com/v1/salesforce-sse -s user
 claude --dangerously-skip-permissions
+cp /mnt/d/Repos/.local-dev-toolbox/scripts/bash/.bashrc ~/.bashrc
+cp /mnt/d/Repos/.local-dev-toolbox/scripts/bash/.bashrc.local ~/.bashrc.local
+source ~/.bashrc
+#wsl-enable-metadata
 cai --continue
 cai
 clear
